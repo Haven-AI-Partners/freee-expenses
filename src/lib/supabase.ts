@@ -1,12 +1,28 @@
 import { auth } from "@clerk/nextjs/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseUrl(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  if (!url) {
+    throw new Error("Missing SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL environment variable");
+  }
+  return url;
+}
 
-if (!supabaseUrl) {
-  throw new Error("Missing SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL environment variable");
+function getSupabaseAnonKey(): string {
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable");
+  }
+  return key;
+}
+
+function getSupabaseServiceRoleKey(): string {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+  }
+  return key;
 }
 
 /**
@@ -22,7 +38,7 @@ export async function createSupabaseClient(): Promise<SupabaseClient> {
     throw new Error("No Clerk session token available");
   }
 
-  return createClient(supabaseUrl!, supabaseAnonKey!, {
+  return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     global: {
       headers: { Authorization: `Bearer ${token}` },
     },
@@ -37,7 +53,18 @@ export async function createSupabaseClient(): Promise<SupabaseClient> {
  * - OAuth callbacks (no Clerk session during redirect)
  * - Background token refresh operations
  */
-export const supabaseAdmin = createClient(
-  supabaseUrl!,
-  supabaseServiceRoleKey || supabaseAnonKey!
-);
+let _supabaseAdmin: SupabaseClient | null = null;
+
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey());
+  }
+  return _supabaseAdmin;
+}
+
+// Keep backward-compatible export as a getter
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return (getSupabaseAdmin() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
