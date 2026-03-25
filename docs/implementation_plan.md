@@ -86,54 +86,54 @@ freee-expenses/
 
 ### Phase 1: Project Setup & Config
 - [x] Initialize package.json with all dependencies
-- [ ] Create tsconfig.json, next.config.js, tailwind.config.ts, postcss.config.js
-- [ ] Set up shadcn/ui (components.json + base UI components)
-- [ ] Create vercel.json with cron config
-- [ ] Create .env.example
-- [ ] Create Clerk middleware
+- [x] Create tsconfig.json, next.config.js, tailwind.config.ts, postcss.config.js
+- [x] Set up shadcn/ui (components.json + base UI components)
+- [x] Create vercel.json with cron config
+- [x] Create .env.example
+- [x] Create Clerk middleware
 
 ### Phase 2: Database & Core Libraries
-- [ ] Create database migration SQL (all 5 tables)
-- [ ] Create `src/lib/supabase.ts` - Supabase client
-- [ ] Create `src/lib/encryption.ts` - AES-256 token encryption
-- [ ] Create `src/types/index.ts` - TypeScript interfaces
+- [x] Create database migration SQL (all 5 tables)
+- [x] Create `src/lib/supabase.ts` - Supabase client
+- [x] Create `src/lib/encryption.ts` - AES-256 token encryption
+- [x] Create `src/types/index.ts` - TypeScript interfaces
 
 ### Phase 3: OAuth Flows
-- [ ] Create `src/lib/freee/oauth.ts` - Freee OAuth helpers
-- [ ] Create `src/lib/google/oauth.ts` - Google OAuth helpers
-- [ ] Create `src/app/api/auth/freee/callback/route.ts`
-- [ ] Create `src/app/api/auth/google/callback/route.ts`
+- [x] Create `src/lib/freee/oauth.ts` - Freee OAuth helpers
+- [x] Create `src/lib/google/oauth.ts` - Google OAuth helpers
+- [x] Create `src/app/api/auth/freee/callback/route.ts`
+- [x] Create `src/app/api/auth/google/callback/route.ts`
 
 ### Phase 4: External API Integrations
-- [ ] Create `src/lib/freee/api.ts` - Freee API (receipts, expense_applications, companies)
-- [ ] Create `src/lib/google/drive.ts` - Google Drive API
-- [ ] Create `src/lib/claude/extract-receipt.ts` - Claude Vision receipt OCR
+- [x] Create `src/lib/freee/api.ts` - Freee API (receipts, expense_applications, companies)
+- [x] Create `src/lib/google/drive.ts` - Google Drive API
+- [x] Create `src/lib/claude/extract-receipt.ts` - Claude Vision receipt OCR
 
 ### Phase 5: Processing Pipeline
-- [ ] Create `src/lib/processing/run-processor.ts` - Main pipeline orchestrator
-- [ ] Create `src/app/api/runs/[id]/process/route.ts`
-- [ ] Create `src/app/api/runs/trigger/route.ts`
-- [ ] Create `src/app/api/runs/route.ts`
-- [ ] Create `src/app/api/cron/monthly/route.ts`
+- [x] Create `src/lib/processing/run-processor.ts` - Main pipeline orchestrator
+- [x] Create `src/app/api/runs/[id]/process/route.ts`
+- [x] Create `src/app/api/runs/trigger/route.ts`
+- [x] Create `src/app/api/runs/route.ts`
+- [x] Create `src/app/api/cron/monthly/route.ts`
 
 ### Phase 6: UI Pages
-- [ ] Create root layout with ClerkProvider
-- [ ] Create landing page
-- [ ] Create sign-in/sign-up pages
-- [ ] Create dashboard page
-- [ ] Create connect wizard page
-- [ ] Create run detail page
-- [ ] Create settings page
+- [x] Create root layout with ClerkProvider
+- [x] Create landing page
+- [x] Create sign-in/sign-up pages
+- [x] Create dashboard page
+- [x] Create connect wizard page
+- [x] Create run detail page
+- [x] Create settings page
 
 ### Phase 7: UI Components
-- [ ] Header and sidebar components
-- [ ] Dashboard components (connection-status, recent-runs, run-trigger)
-- [ ] Connect wizard components (freee-connect, google-connect, preferences-form)
-- [ ] Run detail components (run-progress, expense-items-table)
+- [x] Header and sidebar components
+- [x] Dashboard components (connection-status, recent-runs, run-trigger)
+- [x] Connect wizard components (freee-connect, google-connect, preferences-form)
+- [x] Run detail components (run-progress, expense-items-table)
 
 ### Phase 8: Final
-- [ ] Update README with setup instructions
-- [ ] Verify TypeScript compiles without errors
+- [x] Update README with setup instructions
+- [x] Verify TypeScript compiles without errors
 
 ## Key Architecture Decisions
 
