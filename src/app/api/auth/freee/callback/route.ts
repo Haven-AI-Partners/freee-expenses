@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeFreeeCode } from "@/lib/freee/oauth";
 import { encrypt } from "@/lib/encryption";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const FREEE_API_BASE = "https://api.freee.co.jp/api/1";
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     ).toISOString();
 
     // Upsert singleton connection row
-    await supabase.from("freee_connection").upsert(
+    await supabaseAdmin.from("freee_connection").upsert(
       {
         id: 1,
         access_token: encrypt(tokens.access_token),

@@ -1,5 +1,5 @@
 import { encrypt, decrypt } from "@/lib/encryption";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const FREEE_AUTH_URL = "https://accounts.secure.freee.co.jp/public_api/authorize";
 const FREEE_TOKEN_URL = "https://accounts.secure.freee.co.jp/public_api/token";
@@ -72,7 +72,7 @@ export async function refreshFreeeToken(refreshToken: string): Promise<{
  * Auto-refreshes if expiring within 5 minutes.
  */
 export async function getValidFreeeToken(): Promise<string> {
-  const { data: conn } = await supabase
+  const { data: conn } = await supabaseAdmin
     .from("freee_connection")
     .select("*")
     .eq("id", 1)
@@ -95,7 +95,7 @@ export async function getValidFreeeToken(): Promise<string> {
 
   const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-  await supabase
+  await supabaseAdmin
     .from("freee_connection")
     .update({
       access_token: encrypt(tokens.access_token),

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 import { getFreeeAuthUrl } from "@/lib/freee/oauth";
 import { getGoogleAuthUrl } from "@/lib/google/oauth";
 import { Header } from "@/components/layout/header";
@@ -16,17 +16,18 @@ export default async function SettingsPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const supabase = await createSupabaseClient();
+
+  // User-scoped queries (RLS auto-scopes)
   const { data: connections } = await supabase
     .from("user_connections")
-    .select("provider")
-    .eq("user_id", userId);
+    .select("provider");
 
   const providers = new Set(connections?.map((c) => c.provider) || []);
 
   const { data: prefs } = await supabase
     .from("user_preferences")
     .select("*")
-    .eq("user_id", userId)
     .single();
 
   const preferences = {
@@ -36,7 +37,7 @@ export default async function SettingsPage() {
     folder_pattern: prefs?.folder_pattern || "YYYY-MM Expenses",
   };
 
-  // Check if shared Freee connection exists
+  // Shared Freee connection — readable by all authenticated users via RLS
   const { data: freeeConn } = await supabase
     .from("freee_connection")
     .select("id, company_id, updated_at")

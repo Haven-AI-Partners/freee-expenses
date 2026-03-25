@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getLastMonth } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   // Find all users with Google Drive connected
   // (Freee is a shared app connection, no per-user check needed)
-  const { data: googleUsers } = await supabase
+  const { data: googleUsers } = await supabaseAdmin
     .from("user_connections")
     .select("user_id")
     .eq("provider", "google");
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   for (const { user_id: userId } of googleUsers) {
     // Check for existing run
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from("expense_runs")
       .select("id")
       .eq("user_id", userId)
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     if (existing) continue;
 
     // Create run
-    const { data: run } = await supabase
+    const { data: run } = await supabaseAdmin
       .from("expense_runs")
       .insert({
         user_id: userId,

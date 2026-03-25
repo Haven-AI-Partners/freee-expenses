@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
@@ -8,9 +8,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabase = await createSupabaseClient();
+
   const body = await request.json();
   const { applicant_name, freee_member_id, payment_type, folder_pattern } = body;
 
+  // RLS ensures user can only write their own preferences
   const { error } = await supabase.from("user_preferences").upsert(
     {
       user_id: userId,

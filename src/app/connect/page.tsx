@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 import { getGoogleAuthUrl } from "@/lib/google/oauth";
 import { Header } from "@/components/layout/header";
 import { GoogleConnect } from "@/components/connect/google-connect";
@@ -11,20 +11,20 @@ export default async function ConnectPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  // Check existing Google connection
+  const supabase = await createSupabaseClient();
+
+  // Check existing Google connection (RLS auto-scopes)
   const { data: connections } = await supabase
     .from("user_connections")
-    .select("provider")
-    .eq("user_id", userId);
+    .select("provider");
 
   const providers = new Set(connections?.map((c) => c.provider) || []);
   const googleConnected = providers.has("google");
 
-  // Load preferences
+  // Load preferences (RLS auto-scopes)
   const { data: prefs } = await supabase
     .from("user_preferences")
     .select("*")
-    .eq("user_id", userId)
     .single();
 
   const preferences = {
