@@ -10,6 +10,7 @@ import { Loader2, Save } from "lucide-react";
 interface PreferencesFormProps {
   initialPreferences: {
     applicant_name: string;
+    freee_member_id: number | null;
     payment_type: string;
     folder_pattern: string;
   };
@@ -17,6 +18,9 @@ interface PreferencesFormProps {
 
 export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [applicantName, setApplicantName] = useState(initialPreferences.applicant_name);
+  const [freeMemberId, setFreeMemberId] = useState(
+    initialPreferences.freee_member_id?.toString() || ""
+  );
   const [paymentType, setPaymentType] = useState(initialPreferences.payment_type);
   const [folderPattern, setFolderPattern] = useState(initialPreferences.folder_pattern);
   const [saving, setSaving] = useState(false);
@@ -31,6 +35,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           applicant_name: applicantName,
+          freee_member_id: freeMemberId ? parseInt(freeMemberId) : null,
           payment_type: paymentType,
           folder_pattern: folderPattern,
         }),
@@ -60,6 +65,21 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
             onChange={(e) => setApplicantName(e.target.value)}
             placeholder="Your name as it appears in Freee"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="freee_member_id">Freee Member ID</Label>
+          <Input
+            id="freee_member_id"
+            type="number"
+            value={freeMemberId}
+            onChange={(e) => setFreeMemberId(e.target.value)}
+            placeholder="Your numeric member ID in Freee"
+          />
+          <p className="text-xs text-muted-foreground">
+            Your Freee user/member ID within the company. This determines who the expense is submitted for.
+            Ask your admin if you don&apos;t know your ID.
+          </p>
         </div>
 
         <div className="space-y-1.5">

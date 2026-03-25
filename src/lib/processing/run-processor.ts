@@ -128,7 +128,7 @@ export async function processRun(runId: string): Promise<void> {
           freeeToken,
           companyId,
           `${run.month} - ${extractedData.partner_name}`,
-          prefs?.applicant_name || "",
+          prefs?.freee_member_id || null,
           prefs?.payment_type || "employee_pay",
           [{ receiptData: extractedData, receiptId }]
         );

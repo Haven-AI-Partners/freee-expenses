@@ -33,6 +33,7 @@ CREATE TABLE freee_connection (
 CREATE TABLE user_preferences (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   applicant_name TEXT NOT NULL DEFAULT '',
+  freee_member_id INTEGER,          -- Freee member ID within the company (for applicant_id)
   payment_type TEXT NOT NULL DEFAULT 'employee_pay' CHECK (payment_type IN ('employee_pay', 'company_pay')),
   folder_pattern TEXT NOT NULL DEFAULT 'YYYY-MM Expenses'
 );

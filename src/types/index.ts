@@ -28,6 +28,7 @@ export interface FreeeConnection {
 export interface UserPreferences {
   user_id: string;
   applicant_name: string;
+  freee_member_id: number | null;
   payment_type: "employee_pay" | "company_pay";
   folder_pattern: string;
 }

@@ -31,6 +31,7 @@ export default async function SettingsPage() {
 
   const preferences = {
     applicant_name: prefs?.applicant_name || "",
+    freee_member_id: prefs?.freee_member_id || null,
     payment_type: prefs?.payment_type || "employee_pay",
     folder_pattern: prefs?.folder_pattern || "YYYY-MM Expenses",
   };
