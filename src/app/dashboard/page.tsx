@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 import { Header } from "@/components/layout/header";
 import { ConnectionStatus } from "@/components/dashboard/connection-status";
 import { RecentRuns } from "@/components/dashboard/recent-runs";
@@ -11,6 +11,7 @@ export default async function DashboardPage() {
   if (!userId) redirect("/sign-in");
 
   const user = await currentUser();
+  const supabase = await createSupabaseClient();
 
   // Ensure user exists in DB
   await supabase.from("users").upsert(
@@ -21,20 +22,18 @@ export default async function DashboardPage() {
     { onConflict: "id" }
   );
 
-  // Check Google Drive connection (Freee is a shared app connection)
+  // Check Google Drive connection (RLS auto-scopes to current user)
   const { data: connections } = await supabase
     .from("user_connections")
-    .select("provider")
-    .eq("user_id", userId);
+    .select("provider");
 
   const providers = new Set(connections?.map((c) => c.provider) || []);
   const googleConnected = providers.has("google");
 
-  // Fetch recent runs
+  // Fetch recent runs (RLS auto-scopes to current user)
   const { data: runs } = await supabase
     .from("expense_runs")
     .select("*")
-    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
 

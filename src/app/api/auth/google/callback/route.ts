@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeGoogleCode } from "@/lib/google/oauth";
 import { encrypt } from "@/lib/encryption";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       Date.now() + tokens.expires_in * 1000
     ).toISOString();
 
-    await supabase.from("user_connections").upsert(
+    await supabaseAdmin.from("user_connections").upsert(
       {
         user_id: userId,
         provider: "google",

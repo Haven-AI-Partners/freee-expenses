@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 import { Header } from "@/components/layout/header";
 import { RunProgress } from "@/components/runs/run-progress";
 import { ExpenseItemsTable } from "@/components/runs/expense-items-table";
@@ -17,15 +17,18 @@ export default async function RunDetailPage({
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const supabase = await createSupabaseClient();
+
+  // RLS ensures user can only see their own runs
   const { data: run } = await supabase
     .from("expense_runs")
     .select("*")
     .eq("id", params.id)
-    .eq("user_id", userId)
     .single();
 
   if (!run) notFound();
 
+  // RLS ensures user can only see items from their own runs
   const { data: items } = await supabase
     .from("expense_items")
     .select("*")

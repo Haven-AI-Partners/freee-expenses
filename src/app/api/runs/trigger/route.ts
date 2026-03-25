@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 import { getLastMonth } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
@@ -8,6 +8,8 @@ export async function POST(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = await createSupabaseClient();
 
   const body = await request.json().catch(() => ({}));
   const month = body.month || getLastMonth();
@@ -18,11 +20,10 @@ export async function POST(request: NextRequest) {
     { onConflict: "id", ignoreDuplicates: true }
   );
 
-  // Check for existing run for this month
+  // Check for existing run for this month (RLS auto-scopes)
   const { data: existingRun } = await supabase
     .from("expense_runs")
     .select("id, status")
-    .eq("user_id", userId)
     .eq("month", month)
     .in("status", ["pending", "running"])
     .single();

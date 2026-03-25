@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getValidFreeeToken, getFreeeCompanyId } from "@/lib/freee/oauth";
 import { getValidGoogleToken } from "@/lib/google/oauth";
 import { searchFolder, listImagesInFolder, downloadFile } from "@/lib/google/drive";
@@ -8,7 +8,7 @@ import { resolveFolderName } from "@/lib/utils";
 
 export async function processRun(runId: string): Promise<void> {
   // Load the run
-  const { data: run, error: runError } = await supabase
+  const { data: run, error: runError } = await supabaseAdmin
     .from("expense_runs")
     .select("*")
     .eq("id", runId)
@@ -21,14 +21,14 @@ export async function processRun(runId: string): Promise<void> {
   const userId = run.user_id;
 
   // Update status to running
-  await supabase
+  await supabaseAdmin
     .from("expense_runs")
     .update({ status: "running" })
     .eq("id", runId);
 
   try {
     // Load user preferences
-    const { data: prefs } = await supabase
+    const { data: prefs } = await supabaseAdmin
       .from("user_preferences")
       .select("*")
       .eq("user_id", userId)
@@ -56,7 +56,7 @@ export async function processRun(runId: string): Promise<void> {
     const files = await listImagesInFolder(googleToken, folderId);
 
     if (files.length === 0) {
-      await supabase
+      await supabaseAdmin
         .from("expense_runs")
         .update({
           status: "completed",
@@ -68,7 +68,7 @@ export async function processRun(runId: string): Promise<void> {
     }
 
     // Update total count
-    await supabase
+    await supabaseAdmin
       .from("expense_runs")
       .update({ total_receipts: files.length })
       .eq("id", runId);
@@ -81,7 +81,7 @@ export async function processRun(runId: string): Promise<void> {
       status: "pending",
     }));
 
-    const { data: insertedItems } = await supabase
+    const { data: insertedItems } = await supabaseAdmin
       .from("expense_items")
       .insert(items)
       .select("*");
@@ -107,7 +107,7 @@ export async function processRun(runId: string): Promise<void> {
         );
 
         // Update item with extracted data
-        await supabase
+        await supabaseAdmin
           .from("expense_items")
           .update({
             status: "extracted",
@@ -134,7 +134,7 @@ export async function processRun(runId: string): Promise<void> {
         );
 
         // Update item as submitted
-        await supabase
+        await supabaseAdmin
           .from("expense_items")
           .update({
             status: "submitted",
@@ -148,7 +148,7 @@ export async function processRun(runId: string): Promise<void> {
       } catch (itemError) {
         console.error(`Failed to process item ${item.id}:`, itemError);
 
-        await supabase
+        await supabaseAdmin
           .from("expense_items")
           .update({
             status: "failed",
@@ -164,7 +164,7 @@ export async function processRun(runId: string): Promise<void> {
     }
 
     // Update run as completed
-    await supabase
+    await supabaseAdmin
       .from("expense_runs")
       .update({
         status: "completed",
@@ -177,7 +177,7 @@ export async function processRun(runId: string): Promise<void> {
   } catch (error) {
     console.error(`Run ${runId} failed:`, error);
 
-    await supabase
+    await supabaseAdmin
       .from("expense_runs")
       .update({
         status: "failed",

@@ -1,5 +1,5 @@
 import { encrypt, decrypt } from "@/lib/encryption";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -67,7 +67,7 @@ export async function refreshGoogleToken(refreshToken: string): Promise<{
 }
 
 export async function getValidGoogleToken(userId: string): Promise<string> {
-  const { data: conn } = await supabase
+  const { data: conn } = await supabaseAdmin
     .from("user_connections")
     .select("*")
     .eq("user_id", userId)
@@ -91,7 +91,7 @@ export async function getValidGoogleToken(userId: string): Promise<string> {
 
   const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-  await supabase
+  await supabaseAdmin
     .from("user_connections")
     .update({
       access_token: encrypt(tokens.access_token),
