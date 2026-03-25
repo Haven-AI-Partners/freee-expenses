@@ -7,11 +7,20 @@ export interface User {
 export interface UserConnection {
   id: string;
   user_id: string;
-  provider: "freee" | "google";
+  provider: "google";
   access_token: string;
   refresh_token: string;
   expires_at: string;
-  company_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FreeeConnection {
+  id: number;
+  access_token: string;
+  refresh_token: string;
+  expires_at: string;
+  company_id: string;
   created_at: string;
   updated_at: string;
 }

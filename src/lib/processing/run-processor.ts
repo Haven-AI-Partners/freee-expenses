@@ -1,11 +1,10 @@
 import { supabase } from "@/lib/supabase";
-import { getValidFreeeToken } from "@/lib/freee/oauth";
+import { getValidFreeeToken, getFreeeCompanyId } from "@/lib/freee/oauth";
 import { getValidGoogleToken } from "@/lib/google/oauth";
 import { searchFolder, listImagesInFolder, downloadFile } from "@/lib/google/drive";
 import { uploadReceipt, createExpenseApplication } from "@/lib/freee/api";
 import { extractReceiptData } from "@/lib/claude/extract-receipt";
 import { resolveFolderName } from "@/lib/utils";
-import { ExpenseRun, UserConnection, UserPreferences } from "@/types";
 
 export async function processRun(runId: string): Promise<void> {
   // Load the run
@@ -37,21 +36,12 @@ export async function processRun(runId: string): Promise<void> {
 
     const folderPattern = prefs?.folder_pattern || "YYYY-MM Expenses";
 
-    // Load Freee connection for company_id
-    const { data: freeeConn } = await supabase
-      .from("user_connections")
-      .select("company_id")
-      .eq("user_id", userId)
-      .eq("provider", "freee")
-      .single();
+    // Get shared Freee token + company ID (same for all users)
+    const freeeToken = await getValidFreeeToken();
+    const companyId = getFreeeCompanyId();
 
-    if (!freeeConn?.company_id) {
-      throw new Error("Freee company_id not found");
-    }
-
-    // Get valid tokens
+    // Get per-user Google Drive token
     const googleToken = await getValidGoogleToken(userId);
-    const freeeToken = await getValidFreeeToken(userId);
 
     // Resolve folder name
     const folderName = resolveFolderName(folderPattern, run.month);
@@ -125,18 +115,18 @@ export async function processRun(runId: string): Promise<void> {
           })
           .eq("id", item.id);
 
-        // Upload receipt to Freee
+        // Upload receipt to Freee (shared connection)
         const receiptId = await uploadReceipt(
           freeeToken,
-          freeeConn.company_id,
+          companyId,
           imageBuffer,
           item.file_name
         );
 
-        // Create expense application in Freee
+        // Create expense application in Freee (shared connection)
         const expenseId = await createExpenseApplication(
           freeeToken,
-          freeeConn.company_id,
+          companyId,
           `${run.month} - ${extractedData.partner_name}`,
           prefs?.applicant_name || "",
           prefs?.payment_type || "employee_pay",

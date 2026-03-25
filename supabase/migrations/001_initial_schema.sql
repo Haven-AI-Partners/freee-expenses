@@ -5,18 +5,28 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- OAuth connections (Freee + Google)
+-- Per-user OAuth connections (Google Drive only)
 CREATE TABLE user_connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('freee', 'google')),
+  provider TEXT NOT NULL CHECK (provider IN ('google')),
   access_token TEXT NOT NULL,       -- encrypted
   refresh_token TEXT NOT NULL,      -- encrypted
   expires_at TIMESTAMPTZ NOT NULL,
-  company_id TEXT,                  -- Freee company_id (null for Google)
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, provider)
+);
+
+-- Shared Freee app connection (single row)
+CREATE TABLE freee_connection (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- singleton row
+  access_token TEXT NOT NULL,       -- encrypted
+  refresh_token TEXT NOT NULL,      -- encrypted
+  expires_at TIMESTAMPTZ NOT NULL,
+  company_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- User preferences

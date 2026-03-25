@@ -4,11 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { getFreeeAuthUrl } from "@/lib/freee/oauth";
 import { getGoogleAuthUrl } from "@/lib/google/oauth";
 import { Header } from "@/components/layout/header";
-import { FreeeConnect } from "@/components/connect/freee-connect";
 import { GoogleConnect } from "@/components/connect/google-connect";
 import { PreferencesForm } from "@/components/connect/preferences-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { CheckCircle, ExternalLink } from "lucide-react";
 
 export default async function SettingsPage() {
   const { userId } = await auth();
@@ -33,6 +35,15 @@ export default async function SettingsPage() {
     folder_pattern: prefs?.folder_pattern || "YYYY-MM Expenses",
   };
 
+  // Check if shared Freee connection exists
+  const { data: freeeConn } = await supabase
+    .from("freee_connection")
+    .select("id, company_id, updated_at")
+    .eq("id", 1)
+    .single();
+
+  const freeeConnected = !!freeeConn;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
@@ -50,18 +61,49 @@ export default async function SettingsPage() {
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Connections</CardTitle>
+            <CardTitle>Google Drive</CardTitle>
+            <CardDescription>Your personal Google Drive connection.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <FreeeConnect
-              connected={providers.has("freee")}
-              authUrl={getFreeeAuthUrl(userId)}
-            />
-            <Separator />
+          <CardContent>
             <GoogleConnect
               connected={providers.has("google")}
               authUrl={getGoogleAuthUrl(userId)}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Freee Connection (Shared)</CardTitle>
+            <CardDescription>
+              This is the shared Freee account used by the entire team.
+              Only an admin needs to set this up once.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Status</p>
+                {freeeConnected && (
+                  <p className="text-xs text-muted-foreground">
+                    Company ID: {freeeConn.company_id} · Last updated: {new Date(freeeConn.updated_at).toLocaleString("ja-JP")}
+                  </p>
+                )}
+              </div>
+              {freeeConnected ? (
+                <Badge variant="success" className="gap-1">
+                  <CheckCircle className="h-3 w-3" /> Connected
+                </Badge>
+              ) : (
+                <Badge variant="destructive">Not connected</Badge>
+              )}
+            </div>
+            <a href={getFreeeAuthUrl()}>
+              <Button variant={freeeConnected ? "outline" : "default"} size="sm" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                {freeeConnected ? "Reconnect Freee" : "Connect Freee (Admin)"}
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </main>

@@ -5,14 +5,17 @@ import { supabase } from "@/lib/supabase";
 
 const FREEE_API_BASE = "https://api.freee.co.jp/api/1";
 
+/**
+ * Freee OAuth callback — admin-only, one-time setup.
+ * Stores the shared app connection tokens in the freee_connection singleton row.
+ */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
-  const userId = searchParams.get("state");
 
-  if (!code || !userId) {
+  if (!code) {
     return NextResponse.redirect(
-      new URL("/connect?error=missing_params", request.url)
+      new URL("/settings?error=missing_params", request.url)
     );
   }
 
@@ -30,33 +33,32 @@ export async function GET(request: NextRequest) {
     }
 
     const companiesData = await companiesRes.json();
-    const companyId = companiesData.companies?.[0]?.id?.toString();
+    const companyId = companiesData.companies?.[0]?.id?.toString() || process.env.FREEE_COMPANY_ID || "";
 
     const expiresAt = new Date(
       Date.now() + tokens.expires_in * 1000
     ).toISOString();
 
-    // Upsert connection
-    await supabase.from("user_connections").upsert(
+    // Upsert singleton connection row
+    await supabase.from("freee_connection").upsert(
       {
-        user_id: userId,
-        provider: "freee",
+        id: 1,
         access_token: encrypt(tokens.access_token),
         refresh_token: encrypt(tokens.refresh_token),
         expires_at: expiresAt,
         company_id: companyId,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_id,provider" }
+      { onConflict: "id" }
     );
 
     return NextResponse.redirect(
-      new URL("/connect?freee=connected", request.url)
+      new URL("/settings?freee=connected", request.url)
     );
   } catch (error) {
     console.error("Freee OAuth callback error:", error);
     return NextResponse.redirect(
-      new URL("/connect?error=freee_auth_failed", request.url)
+      new URL("/settings?error=freee_auth_failed", request.url)
     );
   }
 }

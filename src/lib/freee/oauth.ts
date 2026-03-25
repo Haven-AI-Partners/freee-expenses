@@ -4,13 +4,16 @@ import { supabase } from "@/lib/supabase";
 const FREEE_AUTH_URL = "https://accounts.secure.freee.co.jp/public_api/authorize";
 const FREEE_TOKEN_URL = "https://accounts.secure.freee.co.jp/public_api/token";
 
-export function getFreeeAuthUrl(userId: string): string {
+/**
+ * Generate the Freee OAuth URL for the admin to authorize the shared app connection.
+ * This is a one-time setup — not per-user.
+ */
+export function getFreeeAuthUrl(): string {
   const params = new URLSearchParams({
     client_id: process.env.FREEE_CLIENT_ID!,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/freee/callback`,
     response_type: "code",
     prompt: "consent",
-    state: userId,
   });
   return `${FREEE_AUTH_URL}?${params.toString()}`;
 }
@@ -64,16 +67,19 @@ export async function refreshFreeeToken(refreshToken: string): Promise<{
   return res.json();
 }
 
-export async function getValidFreeeToken(userId: string): Promise<string> {
+/**
+ * Get a valid Freee access token from the shared app connection.
+ * Auto-refreshes if expiring within 5 minutes.
+ */
+export async function getValidFreeeToken(): Promise<string> {
   const { data: conn } = await supabase
-    .from("user_connections")
+    .from("freee_connection")
     .select("*")
-    .eq("user_id", userId)
-    .eq("provider", "freee")
+    .eq("id", 1)
     .single();
 
   if (!conn) {
-    throw new Error("Freee not connected");
+    throw new Error("Freee app connection not set up. An admin must connect Freee first.");
   }
 
   const expiresAt = new Date(conn.expires_at);
@@ -90,15 +96,25 @@ export async function getValidFreeeToken(userId: string): Promise<string> {
   const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
   await supabase
-    .from("user_connections")
+    .from("freee_connection")
     .update({
       access_token: encrypt(tokens.access_token),
       refresh_token: encrypt(tokens.refresh_token),
       expires_at: newExpiresAt.toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("user_id", userId)
-    .eq("provider", "freee");
+    .eq("id", 1);
 
   return tokens.access_token;
+}
+
+/**
+ * Get the shared Freee company ID from env or the DB connection row.
+ */
+export function getFreeeCompanyId(): string {
+  const companyId = process.env.FREEE_COMPANY_ID;
+  if (!companyId) {
+    throw new Error("Missing FREEE_COMPANY_ID environment variable");
+  }
+  return companyId;
 }

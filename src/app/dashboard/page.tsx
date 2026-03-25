@@ -21,16 +21,14 @@ export default async function DashboardPage() {
     { onConflict: "id" }
   );
 
-  // Check connections
+  // Check Google Drive connection (Freee is a shared app connection)
   const { data: connections } = await supabase
     .from("user_connections")
     .select("provider")
     .eq("user_id", userId);
 
   const providers = new Set(connections?.map((c) => c.provider) || []);
-  const freeeConnected = providers.has("freee");
   const googleConnected = providers.has("google");
-  const allConnected = freeeConnected && googleConnected;
 
   // Fetch recent runs
   const { data: runs } = await supabase
@@ -47,11 +45,8 @@ export default async function DashboardPage() {
         <h2 className="text-3xl font-bold mb-8">Dashboard</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
-            <ConnectionStatus
-              freeeConnected={freeeConnected}
-              googleConnected={googleConnected}
-            />
-            <RunTrigger disabled={!allConnected} />
+            <ConnectionStatus googleConnected={googleConnected} />
+            <RunTrigger disabled={!googleConnected} />
           </div>
           <div className="md:col-span-2">
             <RecentRuns runs={runs || []} />

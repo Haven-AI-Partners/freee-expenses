@@ -7,31 +7,16 @@ import Link from "next/link";
 import { CheckCircle, XCircle } from "lucide-react";
 
 interface ConnectionStatusProps {
-  freeeConnected: boolean;
   googleConnected: boolean;
 }
 
-export function ConnectionStatus({ freeeConnected, googleConnected }: ConnectionStatusProps) {
-  const allConnected = freeeConnected && googleConnected;
-
+export function ConnectionStatus({ googleConnected }: ConnectionStatusProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">Connections</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm">Freee</span>
-          {freeeConnected ? (
-            <Badge variant="success" className="gap-1">
-              <CheckCircle className="h-3 w-3" /> Connected
-            </Badge>
-          ) : (
-            <Badge variant="destructive" className="gap-1">
-              <XCircle className="h-3 w-3" /> Not connected
-            </Badge>
-          )}
-        </div>
         <div className="flex items-center justify-between">
           <span className="text-sm">Google Drive</span>
           {googleConnected ? (
@@ -44,10 +29,10 @@ export function ConnectionStatus({ freeeConnected, googleConnected }: Connection
             </Badge>
           )}
         </div>
-        {!allConnected && (
+        {!googleConnected && (
           <Link href="/connect">
             <Button variant="outline" size="sm" className="w-full mt-2">
-              Set up connections
+              Connect Google Drive
             </Button>
           </Link>
         )}

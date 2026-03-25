@@ -17,30 +17,20 @@ export async function GET(request: NextRequest) {
 
   const month = getLastMonth();
 
-  // Find all users with both Freee and Google connected
-  const { data: freeeUsers } = await supabase
-    .from("user_connections")
-    .select("user_id")
-    .eq("provider", "freee");
-
+  // Find all users with Google Drive connected
+  // (Freee is a shared app connection, no per-user check needed)
   const { data: googleUsers } = await supabase
     .from("user_connections")
     .select("user_id")
     .eq("provider", "google");
 
-  if (!freeeUsers || !googleUsers) {
-    return NextResponse.json({ message: "No connected users found" });
+  if (!googleUsers || googleUsers.length === 0) {
+    return NextResponse.json({ message: "No users with Google Drive connected" });
   }
-
-  // Users with both connections
-  const freeeUserIds = new Set(freeeUsers.map((u) => u.user_id));
-  const eligibleUsers = googleUsers
-    .filter((u) => freeeUserIds.has(u.user_id))
-    .map((u) => u.user_id);
 
   let triggeredCount = 0;
 
-  for (const userId of eligibleUsers) {
+  for (const { user_id: userId } of googleUsers) {
     // Check for existing run
     const { data: existing } = await supabase
       .from("expense_runs")
