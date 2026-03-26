@@ -33,7 +33,7 @@ export interface UserPreferences {
   folder_pattern: string;
 }
 
-export type RunStatus = "pending" | "running" | "completed" | "failed";
+export type RunStatus = "pending" | "running" | "extracted" | "submitting" | "completed" | "failed";
 
 export interface ExpenseRun {
   id: string;

@@ -7,6 +7,8 @@ import { ExpenseRun } from "@/types";
 const statusVariants: Record<string, "default" | "secondary" | "success" | "destructive" | "warning"> = {
   pending: "secondary",
   running: "warning",
+  extracted: "default",
+  submitting: "warning",
   completed: "success",
   failed: "destructive",
 };
@@ -35,11 +37,13 @@ export function RunProgress({ run }: RunProgressProps) {
         </Badge>
       </div>
 
-      {run.status === "running" && (
+      {(run.status === "running" || run.status === "submitting") && (
         <div className="space-y-2">
           <Progress value={progressPercent} />
           <p className="text-sm text-muted-foreground">
-            Processing {processed}/{run.total_receipts} receipts...
+            {run.status === "running"
+              ? `Scanning ${processed}/${run.total_receipts} receipts...`
+              : `Submitting ${processed}/${run.total_receipts} to Freee...`}
           </p>
         </div>
       )}

@@ -8,6 +8,8 @@ import { ExpenseRun } from "@/types";
 const statusVariants: Record<string, "default" | "secondary" | "success" | "destructive" | "warning"> = {
   pending: "secondary",
   running: "warning",
+  extracted: "default",
+  submitting: "warning",
   completed: "success",
   failed: "destructive",
 };
@@ -41,7 +43,7 @@ export function RecentRuns({ runs }: RecentRunsProps) {
                   </p>
                 </div>
                 <Badge variant={statusVariants[run.status] || "default"}>
-                  {run.status}
+                  {run.status === "extracted" ? "review" : run.status}
                 </Badge>
               </Link>
             ))}

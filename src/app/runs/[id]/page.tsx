@@ -7,23 +7,25 @@ import { RunProgress } from "@/components/runs/run-progress";
 import { ExpenseItemsTable } from "@/components/runs/expense-items-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ApproveButton } from "@/components/runs/approve-button";
 import { ArrowLeft } from "lucide-react";
 
 export default async function RunDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const { id } = await params;
   const supabase = await createSupabaseClient();
 
   // RLS ensures user can only see their own runs
   const { data: run } = await supabase
     .from("expense_runs")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!run) notFound();
@@ -51,6 +53,20 @@ export default async function RunDetailPage({
           </CardHeader>
           <CardContent className="space-y-6">
             <RunProgress run={run} />
+
+            {run.status === "extracted" && (
+              <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm text-blue-800">
+                  Review the extracted data below, then approve to send to Freee.
+                </p>
+                <ApproveButton
+                  runId={run.id}
+                  extractedCount={(items || []).filter((i: { status: string }) => i.status === "extracted").length}
+                  totalAmount={run.total_amount}
+                />
+              </div>
+            )}
+
             <ExpenseItemsTable items={items || []} />
           </CardContent>
         </Card>

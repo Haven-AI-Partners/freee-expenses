@@ -21,8 +21,7 @@
       "WebSearch",
       "WebFetch",
       "Read",
-      "Bash(ls /Users/alex/dev/haven/freee-expenses/tailwind.config.*)",
-      "Bash(node -e \"console.log\\(require\\(''/Users/alex/dev/haven/freee-expenses/node_modules/tailwindcss/package.json''\\).version\\)\")"
+      "Bash(ls:*)"
     ]
   }
 }

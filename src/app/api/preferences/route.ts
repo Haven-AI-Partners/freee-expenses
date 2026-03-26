@@ -13,6 +13,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { applicant_name, freee_member_id, payment_type, folder_pattern } = body;
 
+  // Ensure user exists before upserting preferences (FK constraint)
+  await supabase.from("users").upsert(
+    { id: userId, email: "" },
+    { onConflict: "id", ignoreDuplicates: true }
+  );
+
   // RLS ensures user can only write their own preferences
   const { error } = await supabase.from("user_preferences").upsert(
     {
@@ -26,6 +32,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (error) {
+    console.error("Preferences save error:", JSON.stringify(error));
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     .from("expense_runs")
     .select("id, status")
     .eq("month", month)
-    .in("status", ["pending", "running"])
+    .in("status", ["pending", "running", "extracted", "submitting"])
     .single();
 
   if (existingRun) {

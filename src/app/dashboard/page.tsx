@@ -2,7 +2,6 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
 import { Header } from "@/components/layout/header";
-import { ConnectionStatus } from "@/components/dashboard/connection-status";
 import { RecentRuns } from "@/components/dashboard/recent-runs";
 import { RunTrigger } from "@/components/dashboard/run-trigger";
 
@@ -43,8 +42,7 @@ export default async function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <h2 className="text-3xl font-bold mb-8">Dashboard</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-1 space-y-6">
-            <ConnectionStatus googleConnected={googleConnected} />
+          <div className="md:col-span-1">
             <RunTrigger disabled={!googleConnected} />
           </div>
           <div className="md:col-span-2">

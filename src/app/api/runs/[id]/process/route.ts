@@ -5,7 +5,7 @@ export const maxDuration = 60; // Vercel function timeout
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Verify internal secret (this endpoint is called internally)
   const secret = request.headers.get("x-internal-secret");
@@ -13,7 +13,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const runId = params.id;
+  const { id: runId } = await params;
 
   try {
     await processRun(runId);
