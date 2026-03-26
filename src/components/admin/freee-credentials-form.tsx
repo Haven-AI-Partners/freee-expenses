@@ -154,7 +154,7 @@ export function FreeeCredentialsForm({
             <p className="text-xs text-muted-foreground">
               Company ID: {companyId || "—"} · Last updated:{" "}
               {updatedAt
-                ? new Date(updatedAt).toLocaleString("ja-JP")
+                ? new Date(updatedAt).toISOString().slice(0, 16).replace("T", " ")
                 : "—"}
             </p>
           </div>

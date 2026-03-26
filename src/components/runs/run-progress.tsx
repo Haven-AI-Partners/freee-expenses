@@ -29,7 +29,7 @@ export function RunProgress({ run }: RunProgressProps) {
         <div>
           <h3 className="text-2xl font-bold">{run.month}</h3>
           <p className="text-sm text-muted-foreground">
-            Created {new Date(run.created_at).toLocaleString("ja-JP")}
+            Created {new Date(run.created_at).toISOString().slice(0, 16).replace("T", " ")}
           </p>
         </div>
         <Badge variant={statusVariants[run.status] || "default"} className="text-sm">
