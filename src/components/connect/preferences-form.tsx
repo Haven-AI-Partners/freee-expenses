@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+
+interface FreeeMember {
+  id: number;
+  display_name: string;
+  email: string;
+}
 
 interface PreferencesFormProps {
   initialPreferences: {
@@ -25,6 +31,27 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [folderPattern, setFolderPattern] = useState(initialPreferences.folder_pattern);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [detectedMember, setDetectedMember] = useState<FreeeMember | null>(null);
+  const [loadingMember, setLoadingMember] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/freee-members")
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => {
+        if (data.member) {
+          setDetectedMember(data.member);
+          // Auto-populate if not already set
+          if (!freeMemberId) {
+            setFreeMemberId(data.member.id.toString());
+          }
+          if (!applicantName && data.member.display_name) {
+            setApplicantName(data.member.display_name);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMember(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     setSaving(true);
@@ -69,16 +96,29 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
 
         <div className="space-y-1.5">
           <Label htmlFor="freee_member_id">Freee Member ID</Label>
-          <Input
-            id="freee_member_id"
-            type="number"
-            value={freeMemberId}
-            onChange={(e) => setFreeMemberId(e.target.value)}
-            placeholder="Your numeric member ID in Freee"
-          />
+          {loadingMember ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Detecting from Freee...
+            </div>
+          ) : (
+            <>
+              <Input
+                id="freee_member_id"
+                type="number"
+                value={freeMemberId}
+                onChange={(e) => setFreeMemberId(e.target.value)}
+                placeholder="Your numeric member ID in Freee"
+              />
+              {detectedMember && (
+                <p className="text-xs text-green-700">
+                  Auto-detected: {detectedMember.display_name}
+                  {detectedMember.email ? ` (${detectedMember.email})` : ""}
+                </p>
+              )}
+            </>
+          )}
           <p className="text-xs text-muted-foreground">
-            Your Freee user/member ID within the company. This determines who the expense is submitted for.
-            Ask your admin if you don&apos;t know your ID.
+            This determines who the expense is submitted for in Freee.
           </p>
         </div>
 

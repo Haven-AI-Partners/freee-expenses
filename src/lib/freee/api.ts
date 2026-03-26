@@ -96,29 +96,33 @@ export async function getCompanies(
   return data.companies;
 }
 
-export async function getCompanyMembers(
+export async function getCurrentFreeeMember(
   accessToken: string,
   companyId: string
-): Promise<{ id: number; display_name: string; email: string }[]> {
+): Promise<{ id: number; display_name: string; email: string } | null> {
   const res = await fetch(
-    `${FREEE_API_BASE}/companies/${companyId}/sections?limit=100`,
+    `${FREEE_API_BASE}/users/me?companies=true`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
-  // Use the users endpoint to get members
-  const usersRes = await fetch(
-    `${FREEE_API_BASE}/users?company_id=${companyId}&limit=100`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-
-  if (!usersRes.ok) {
-    throw new Error("Failed to fetch Freee company members");
+  if (!res.ok) {
+    const error = await res.text();
+    console.error("Freee users/me API error:", res.status, error);
+    throw new Error(`Failed to fetch Freee user: ${res.status} ${error}`);
   }
 
-  const data = await usersRes.json();
-  return (data.users || []).map((u: { id: number; display_name?: string; email?: string }) => ({
-    id: u.id,
-    display_name: u.display_name || "",
-    email: u.email || "",
-  }));
+  const data = await res.json();
+  const user = data.user;
+  if (!user) return null;
+
+  // Find the member ID for this company
+  const company = user.companies?.find(
+    (c: { id: number }) => c.id.toString() === companyId
+  );
+
+  return {
+    id: company?.employee_id || user.id,
+    display_name: `${user.last_name || ""} ${user.first_name || ""}`.trim() || user.email || "",
+    email: user.email || "",
+  };
 }
