@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   if (!code || !userId) {
     return NextResponse.redirect(
-      new URL("/connect?error=missing_params", request.url)
+      new URL("/settings?error=missing_params", request.url)
     );
   }
 
@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.redirect(
-      new URL("/connect?google=connected", request.url)
+      new URL("/settings?google=connected", request.url)
     );
   } catch (error) {
     console.error("Google OAuth callback error:", error);
     return NextResponse.redirect(
-      new URL("/connect?error=google_auth_failed", request.url)
+      new URL("/settings?error=google_auth_failed", request.url)
     );
   }
 }

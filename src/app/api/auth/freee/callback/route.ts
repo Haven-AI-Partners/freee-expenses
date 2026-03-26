@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/settings?error=missing_params", request.url)
+      new URL("/admin?error=missing_params", request.url)
     );
   }
 
@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.redirect(
-      new URL("/settings?freee=connected", request.url)
+      new URL("/admin?freee=connected", request.url)
     );
   } catch (error) {
     console.error("Freee OAuth callback error:", error);
     return NextResponse.redirect(
-      new URL("/settings?error=freee_auth_failed", request.url)
+      new URL("/admin?error=freee_auth_failed", request.url)
     );
   }
 }

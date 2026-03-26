@@ -5,12 +5,40 @@ const FREEE_AUTH_URL = "https://accounts.secure.freee.co.jp/public_api/authorize
 const FREEE_TOKEN_URL = "https://accounts.secure.freee.co.jp/public_api/token";
 
 /**
+ * Get Freee app credentials from the DB (preferred) or env vars (fallback).
+ */
+async function getFreeeCredentials(): Promise<{ clientId: string; clientSecret: string }> {
+  const { data: conn } = await supabaseAdmin
+    .from("freee_connection")
+    .select("client_id, client_secret")
+    .eq("id", 1)
+    .single();
+
+  if (conn?.client_id && conn?.client_secret) {
+    return {
+      clientId: decrypt(conn.client_id),
+      clientSecret: decrypt(conn.client_secret),
+    };
+  }
+
+  // Fall back to env vars
+  const clientId = process.env.FREEE_CLIENT_ID;
+  const clientSecret = process.env.FREEE_CLIENT_SECRET;
+  if (clientId && clientSecret) {
+    return { clientId, clientSecret };
+  }
+
+  throw new Error("Freee app credentials not configured. Set them on the Admin page.");
+}
+
+/**
  * Generate the Freee OAuth URL for the admin to authorize the shared app connection.
  * This is a one-time setup — not per-user.
  */
-export function getFreeeAuthUrl(): string {
+export async function getFreeeAuthUrl(): Promise<string> {
+  const { clientId } = await getFreeeCredentials();
   const params = new URLSearchParams({
-    client_id: process.env.FREEE_CLIENT_ID!,
+    client_id: clientId,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/freee/callback`,
     response_type: "code",
     prompt: "consent",
@@ -23,13 +51,14 @@ export async function exchangeFreeeCode(code: string): Promise<{
   refresh_token: string;
   expires_in: number;
 }> {
+  const { clientId, clientSecret } = await getFreeeCredentials();
   const res = await fetch(FREEE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       grant_type: "authorization_code",
-      client_id: process.env.FREEE_CLIENT_ID,
-      client_secret: process.env.FREEE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       code,
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/freee/callback`,
     }),
@@ -48,13 +77,14 @@ export async function refreshFreeeToken(refreshToken: string): Promise<{
   refresh_token: string;
   expires_in: number;
 }> {
+  const { clientId, clientSecret } = await getFreeeCredentials();
   const res = await fetch(FREEE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       grant_type: "refresh_token",
-      client_id: process.env.FREEE_CLIENT_ID,
-      client_secret: process.env.FREEE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: refreshToken,
     }),
   });
@@ -109,12 +139,22 @@ export async function getValidFreeeToken(): Promise<string> {
 }
 
 /**
- * Get the shared Freee company ID from env or the DB connection row.
+ * Get the shared Freee company ID from the DB connection row, falling back to env.
  */
-export function getFreeeCompanyId(): string {
+export async function getFreeeCompanyId(): Promise<string> {
+  const { data: conn } = await supabaseAdmin
+    .from("freee_connection")
+    .select("company_id")
+    .eq("id", 1)
+    .single();
+
+  if (conn?.company_id) {
+    return conn.company_id;
+  }
+
   const companyId = process.env.FREEE_COMPANY_ID;
   if (!companyId) {
-    throw new Error("Missing FREEE_COMPANY_ID environment variable");
+    throw new Error("Missing Freee company ID. Connect Freee on the Admin page.");
   }
   return companyId;
 }
