@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
-import { getFreeeAuthUrl } from "@/lib/freee/oauth";
 import { Header } from "@/components/layout/header";
 import { FreeeCredentialsForm } from "@/components/admin/freee-credentials-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,16 +21,6 @@ export default async function AdminPage() {
   const hasCredentials = !!(freeeConn?.client_id && freeeConn?.client_secret);
   const freeeConnected = !!(freeeConn?.company_id && freeeConn?.updated_at);
 
-  // Only generate auth URL if credentials exist
-  let authUrl: string | null = null;
-  if (hasCredentials) {
-    try {
-      authUrl = await getFreeeAuthUrl();
-    } catch {
-      // Credentials may be invalid — let the form handle it
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
@@ -44,7 +33,12 @@ export default async function AdminPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Freee Connection</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                1
+              </span>
+              Freee OAuth2 → Get Access Token
+            </CardTitle>
             <CardDescription>
               Enter your Freee app credentials and connect to authorize expense submissions.
             </CardDescription>
@@ -53,7 +47,6 @@ export default async function AdminPage() {
             <FreeeCredentialsForm
               hasCredentials={hasCredentials}
               freeeConnected={freeeConnected}
-              authUrl={authUrl}
               companyId={freeeConn?.company_id ?? undefined}
               updatedAt={freeeConn?.updated_at ?? undefined}
             />
