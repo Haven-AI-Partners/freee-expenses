@@ -23,7 +23,7 @@ export function Header() {
             </Link>
           </nav>
         </div>
-        <UserButton afterSignOutUrl="/" />
+        <UserButton />
       </div>
     </header>
   );
