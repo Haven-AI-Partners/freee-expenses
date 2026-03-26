@@ -30,7 +30,7 @@ export function ConnectionStatus({ googleConnected }: ConnectionStatusProps) {
           )}
         </div>
         {!googleConnected && (
-          <Link href="/connect">
+          <Link href="/settings">
             <Button variant="outline" size="sm" className="w-full mt-2">
               Connect Google Drive
             </Button>

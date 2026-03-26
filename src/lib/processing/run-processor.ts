@@ -38,7 +38,7 @@ export async function processRun(runId: string): Promise<void> {
 
     // Get shared Freee token + company ID (same for all users)
     const freeeToken = await getValidFreeeToken();
-    const companyId = getFreeeCompanyId();
+    const companyId = await getFreeeCompanyId();
 
     // Get per-user Google Drive token
     const googleToken = await getValidGoogleToken(userId);

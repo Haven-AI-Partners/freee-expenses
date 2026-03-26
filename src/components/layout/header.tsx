@@ -15,11 +15,11 @@ export function Header() {
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
             </Link>
-            <Link href="/connect" className="text-muted-foreground hover:text-foreground transition-colors">
-              Connections
-            </Link>
             <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
               Settings
+            </Link>
+            <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
+              Admin
             </Link>
           </nav>
         </div>
