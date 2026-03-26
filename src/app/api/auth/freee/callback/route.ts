@@ -6,8 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase";
 const FREEE_API_BASE = "https://api.freee.co.jp/api/1";
 
 /**
- * Freee OAuth callback — admin-only, one-time setup.
- * Stores the shared app connection tokens in the freee_connection singleton row.
+ * @deprecated This redirect-based callback is superseded by the OOB code-paste
+ * flow in /api/admin/freee-exchange. Kept for backward compatibility.
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

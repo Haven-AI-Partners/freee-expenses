@@ -72,6 +72,39 @@ export async function exchangeFreeeCode(code: string): Promise<{
   return res.json();
 }
 
+/**
+ * Exchange an authorization code using the OOB (out-of-band) flow.
+ * Used by the manual code-paste wizard on the admin page.
+ */
+export async function exchangeFreeeCodeOOB(
+  clientId: string,
+  clientSecret: string,
+  code: string
+): Promise<{
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}> {
+  const res = await fetch(FREEE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Freee token exchange failed: ${error}`);
+  }
+
+  return res.json();
+}
+
 export async function refreshFreeeToken(refreshToken: string): Promise<{
   access_token: string;
   refresh_token: string;
