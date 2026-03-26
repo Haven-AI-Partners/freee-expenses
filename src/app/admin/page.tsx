@@ -12,14 +12,18 @@ export default async function AdminPage() {
   const supabase = await createSupabaseClient();
 
   // Shared Freee connection — readable by all authenticated users via RLS
-  const { data: freeeConn } = await supabase
+  const { data: freeeConn, error: freeeError } = await supabase
     .from("freee_connection")
-    .select("id, company_id, updated_at, client_id, client_secret")
+    .select("id, company_id, updated_at, client_id, client_secret, access_token")
     .eq("id", 1)
     .single();
 
+  if (freeeError) {
+    console.error("Failed to load freee_connection:", freeeError);
+  }
+
   const hasCredentials = !!(freeeConn?.client_id && freeeConn?.client_secret);
-  const freeeConnected = !!(freeeConn?.company_id && freeeConn?.updated_at);
+  const freeeConnected = !!(freeeConn?.access_token && freeeConn?.updated_at);
 
   return (
     <div className="min-h-screen bg-slate-50">

@@ -142,6 +142,8 @@ export function FreeeCredentialsForm({
     }
   };
 
+  const [showSetup, setShowSetup] = useState(!initialConnected);
+
   return (
     <div className="space-y-6">
       {/* Connection status */}
@@ -156,12 +158,22 @@ export function FreeeCredentialsForm({
                 : "—"}
             </p>
           </div>
-          <Badge variant="success" className="gap-1">
-            <CheckCircle className="h-3 w-3" /> Connected
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSetup(!showSetup)}
+            >
+              {showSetup ? "Hide" : "Reconnect"}
+            </Button>
+            <Badge variant="success" className="gap-1">
+              <CheckCircle className="h-3 w-3" /> Connected
+            </Badge>
+          </div>
         </div>
       )}
 
+      {!showSetup ? null : <>
       {/* Tip banner */}
       <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
         <p className="text-sm">
@@ -347,6 +359,8 @@ export function FreeeCredentialsForm({
           </Button>
         </div>
       </div>
+
+      </>}
 
       {/* Error message */}
       {error && (

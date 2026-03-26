@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       Date.now() + tokens.expires_in * 1000
     ).toISOString();
 
-    await supabaseAdmin.from("freee_connection").upsert(
+    const { error: upsertError } = await supabaseAdmin.from("freee_connection").upsert(
       {
         id: 1,
         client_id: encrypt(client_id),
@@ -63,6 +63,14 @@ export async function POST(request: NextRequest) {
       },
       { onConflict: "id" }
     );
+
+    if (upsertError) {
+      console.error("Failed to save Freee connection:", upsertError);
+      return NextResponse.json(
+        { error: `Token exchange succeeded but failed to save: ${upsertError.message}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       access_token: tokens.access_token,
