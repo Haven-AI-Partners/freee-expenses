@@ -36,11 +36,28 @@ export async function extractReceiptData(
   imageBuffer: Buffer,
   mimeType: string
 ): Promise<ExtractedReceiptData> {
-  const base64Image = imageBuffer.toString("base64");
+  const base64Data = imageBuffer.toString("base64");
+  const isPdf = mimeType === "application/pdf";
 
-  const mediaType = mimeType.startsWith("image/")
-    ? (mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp")
-    : "image/jpeg";
+  const fileContent: Anthropic.ContentBlockParam = isPdf
+    ? {
+        type: "document",
+        source: {
+          type: "base64",
+          media_type: "application/pdf",
+          data: base64Data,
+        },
+      }
+    : {
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: (mimeType.startsWith("image/")
+            ? mimeType
+            : "image/jpeg") as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+          data: base64Data,
+        },
+      };
 
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -49,14 +66,7 @@ export async function extractReceiptData(
       {
         role: "user",
         content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64Image,
-            },
-          },
+          fileContent,
           {
             type: "text",
             text: EXTRACTION_PROMPT,

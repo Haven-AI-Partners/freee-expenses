@@ -4,6 +4,8 @@ import { createSupabaseClient } from "@/lib/supabase";
 import { Header } from "@/components/layout/header";
 import { RecentRuns } from "@/components/dashboard/recent-runs";
 import { RunTrigger } from "@/components/dashboard/run-trigger";
+import { FolderContents } from "@/components/dashboard/folder-contents";
+import { getLastMonth } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -28,6 +30,7 @@ export default async function DashboardPage() {
 
   const providers = new Set(connections?.map((c) => c.provider) || []);
   const googleConnected = providers.has("google");
+  const lastMonth = getLastMonth();
 
   // Fetch recent runs (RLS auto-scopes to current user)
   const { data: runs } = await supabase
@@ -45,7 +48,8 @@ export default async function DashboardPage() {
           <div className="md:col-span-1">
             <RunTrigger disabled={!googleConnected} />
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 space-y-6">
+            {googleConnected && <FolderContents month={lastMonth} />}
             <RecentRuns runs={runs || []} />
           </div>
         </div>
