@@ -10,7 +10,12 @@ import { Loader2, Save } from "lucide-react";
 interface FreeeMember {
   id: number;
   display_name: string;
-  email: string;
+  email?: string;
+}
+
+interface FreeeSection {
+  id: number;
+  name: string;
 }
 
 interface PreferencesFormProps {
@@ -19,6 +24,8 @@ interface PreferencesFormProps {
     freee_member_id: number | null;
     payment_type: string;
     folder_pattern: string;
+    department: string | null;
+    approver_id: number | null;
   };
 }
 
@@ -29,18 +36,22 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   );
   const [paymentType, setPaymentType] = useState(initialPreferences.payment_type);
   const [folderPattern, setFolderPattern] = useState(initialPreferences.folder_pattern);
+  const [department, setDepartment] = useState(initialPreferences.department || "");
+  const [approverId, setApproverId] = useState(initialPreferences.approver_id?.toString() || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [detectedMember, setDetectedMember] = useState<FreeeMember | null>(null);
   const [loadingMember, setLoadingMember] = useState(true);
+  const [sections, setSections] = useState<FreeeSection[]>([]);
+  const [members, setMembers] = useState<FreeeMember[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
 
   useEffect(() => {
     fetch("/api/freee-members")
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data) => {
-        if (data.member) {
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { member?: FreeeMember } | null) => {
+        if (data?.member) {
           setDetectedMember(data.member);
-          // Auto-populate if not already set
           if (!freeMemberId) {
             setFreeMemberId(data.member.id.toString());
           }
@@ -52,6 +63,24 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       .catch(() => {})
       .finally(() => setLoadingMember(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    fetch("/api/freee-options")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { sections?: FreeeSection[]; members?: FreeeMember[] } | null) => {
+        if (data?.sections) setSections(data.sections);
+        const fetched = data?.members || [];
+        // Ensure Kent Monma is always available
+        if (!fetched.some((m) => m.id === 13907627)) {
+          fetched.push({ id: 13907627, display_name: "Kent Monma" });
+        }
+        setMembers(fetched);
+      })
+      .catch(() => {
+        setMembers([{ id: 13907627, display_name: "Kent Monma" }]);
+      })
+      .finally(() => setLoadingOptions(false));
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -65,6 +94,8 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
           freee_member_id: freeMemberId ? parseInt(freeMemberId) : null,
           payment_type: paymentType,
           folder_pattern: folderPattern,
+          department: department || null,
+          approver_id: approverId ? parseInt(approverId) : null,
         }),
       });
 
@@ -92,6 +123,9 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
             onChange={(e) => setApplicantName(e.target.value)}
             placeholder="Your name as it appears in Freee"
           />
+          <p className="text-xs text-muted-foreground">
+            Used in the expense title (e.g. 3月立替精算_田中太郎).
+          </p>
         </div>
 
         <div className="space-y-1.5">
@@ -133,6 +167,64 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
               <SelectItem value="company_pay">Company Pay (会社払い)</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Department (部門)</Label>
+          {loadingOptions ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading from Freee...
+            </div>
+          ) : sections.length > 0 ? (
+            <Select value={department} onValueChange={setDepartment}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {sections.map((s) => (
+                  <SelectItem key={s.id} value={s.id.toString()}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              type="number"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="Freee section ID"
+            />
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Approver (承認者)</Label>
+          {loadingOptions ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading from Freee...
+            </div>
+          ) : members.length > 0 ? (
+            <Select value={approverId} onValueChange={setApproverId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select approver" />
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id.toString()}>
+                    {m.display_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              type="number"
+              value={approverId}
+              onChange={(e) => setApproverId(e.target.value)}
+              placeholder="Freee member ID of the approver"
+            />
+          )}
         </div>
 
         <div className="space-y-1.5">

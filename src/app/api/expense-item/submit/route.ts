@@ -49,10 +49,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { fileId, fileName, extractedData } = (await request.json()) as {
+  const { fileId, fileName, extractedData, sectionId, approverId } = (await request.json()) as {
     fileId: string;
     fileName: string;
     extractedData: ExtractedReceiptData;
+    sectionId?: string;
+    approverId?: string;
   };
 
   if (!fileId || !extractedData) {
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseClient();
     const { data: prefs } = await supabase
       .from("user_preferences")
-      .select("freee_member_id, payment_type")
+      .select("applicant_name, freee_member_id, payment_type, department, approver_id")
       .eq("user_id", userId)
       .single();
 
@@ -83,12 +85,23 @@ export async function POST(request: NextRequest) {
       fileName
     );
 
+    // Build title: XX月立替精算_Name
+    const issueMonth = extractedData.issue_date
+      ? parseInt(extractedData.issue_date.split("-")[1], 10)
+      : new Date().getMonth() + 1;
+    const applicantName = prefs?.applicant_name || "";
+    const title = `${issueMonth}月立替精算_${applicantName}`;
+
     const expenseId = await createExpenseApplication(
       freeeToken,
       companyId,
-      `${extractedData.issue_date} - ${extractedData.partner_name}`,
-      prefs?.freee_member_id || null,
-      prefs?.payment_type || "employee_pay",
+      title,
+      {
+        applicantId: prefs?.freee_member_id || null,
+        sectionId: sectionId ? parseInt(sectionId) : (prefs?.department ? parseInt(prefs.department) : null),
+        approverId: approverId ? parseInt(approverId) : (prefs?.approver_id || null),
+        approvalFlowRouteId: 1161971,
+      },
       [{ receiptData: extractedData, receiptId }]
     );
 

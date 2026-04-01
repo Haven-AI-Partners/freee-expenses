@@ -64,17 +64,25 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { fileId } = await request.json();
-  if (!fileId) {
-    return NextResponse.json({ error: "fileId is required" }, { status: 400 });
+  const { fileId, all } = await request.json();
+
+  if (!fileId && !all) {
+    return NextResponse.json({ error: "fileId or all is required" }, { status: 400 });
   }
 
   try {
-    await supabaseAdmin
-      .from("ocr_results")
-      .delete()
-      .eq("user_id", userId)
-      .eq("file_id", fileId);
+    if (all) {
+      await supabaseAdmin
+        .from("ocr_results")
+        .delete()
+        .eq("user_id", userId);
+    } else {
+      await supabaseAdmin
+        .from("ocr_results")
+        .delete()
+        .eq("user_id", userId)
+        .eq("file_id", fileId);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createSupabaseClient } from "@/lib/supabase";
 
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = await createSupabaseClient();
+  const { data } = await supabase
+    .from("user_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  return NextResponse.json(data || {});
+}
+
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
@@ -11,7 +27,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createSupabaseClient();
 
   const body = await request.json();
-  const { applicant_name, freee_member_id, payment_type, folder_pattern } = body;
+  const { applicant_name, freee_member_id, payment_type, folder_pattern, department, approver_id } = body;
 
   // Ensure user exists before upserting preferences (FK constraint)
   await supabase.from("users").upsert(
@@ -27,6 +43,8 @@ export async function POST(request: NextRequest) {
       freee_member_id: freee_member_id || null,
       payment_type: payment_type || "employee_pay",
       folder_pattern: folder_pattern || "YYYY-MM Expenses",
+      department: department || null,
+      approver_id: approver_id || null,
     },
     { onConflict: "user_id" }
   );

@@ -37,8 +37,12 @@ export async function createExpenseApplication(
   accessToken: string,
   companyId: string,
   title: string,
-  applicantId: number | null,
-  paymentType: "employee_pay" | "company_pay",
+  options: {
+    applicantId?: number | null;
+    sectionId?: number | null;
+    approverId?: number | null;
+    approvalFlowRouteId?: number | null;
+  },
   items: {
     receiptData: ExtractedReceiptData;
     receiptId: number;
@@ -63,9 +67,17 @@ export async function createExpenseApplication(
     draft: true,
   };
 
-  // Set the applicant (Freee member) who is submitting this expense
-  if (applicantId) {
-    expenseApplication.applicant_id = applicantId;
+  if (options.applicantId) {
+    expenseApplication.applicant_id = options.applicantId;
+  }
+  if (options.sectionId) {
+    expenseApplication.section_id = options.sectionId;
+  }
+  if (options.approverId) {
+    expenseApplication.approver_id = options.approverId;
+  }
+  if (options.approvalFlowRouteId) {
+    expenseApplication.approval_flow_route_id = options.approvalFlowRouteId;
   }
 
   const res = await fetch(`${FREEE_API_BASE}/expense_applications`, {
@@ -154,6 +166,73 @@ export async function finalizeExpenseApplication(
   }
 }
 
+/**
+ * Cancel (取り消す) a submitted expense application in Freee.
+ * Fetches the current step/round from the application first.
+ */
+export async function cancelExpenseApplication(
+  accessToken: string,
+  companyId: string,
+  expenseApplicationId: number
+): Promise<void> {
+  // Fetch current application to get step and round
+  const getRes = await fetch(
+    `${FREEE_API_BASE}/expense_applications/${expenseApplicationId}?company_id=${parseInt(companyId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!getRes.ok) {
+    const error = await getRes.text();
+    throw new Error(`Freee fetch expense failed: ${error}`);
+  }
+
+  const { expense_application: app } = await getRes.json();
+
+  const res = await fetch(
+    `${FREEE_API_BASE}/expense_applications/${expenseApplicationId}/actions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        company_id: parseInt(companyId),
+        approval_action: "cancel",
+        target_step_id: app.current_step_id,
+        target_round: app.current_round,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Freee cancel failed: ${error}`);
+  }
+}
+
+/**
+ * Delete a draft/canceled expense application from Freee.
+ */
+export async function deleteExpenseApplication(
+  accessToken: string,
+  companyId: string,
+  expenseApplicationId: number
+): Promise<void> {
+  const res = await fetch(
+    `${FREEE_API_BASE}/expense_applications/${expenseApplicationId}?company_id=${parseInt(companyId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Freee delete failed: ${error}`);
+  }
+}
+
 export async function getCompanies(
   accessToken: string
 ): Promise<{ id: number; name: string }[]> {
@@ -198,4 +277,71 @@ export async function getCurrentFreeeMember(
     display_name: `${user.last_name || ""} ${user.first_name || ""}`.trim() || user.email || "",
     email: user.email || "",
   };
+}
+
+export async function getSections(
+  accessToken: string,
+  companyId: string
+): Promise<{ id: number; name: string }[]> {
+  const res = await fetch(
+    `${FREEE_API_BASE}/sections?company_id=${parseInt(companyId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Failed to fetch Freee sections: ${error}`);
+  }
+
+  const data = await res.json();
+  return data.sections || [];
+}
+
+export async function getAvailableApprovers(
+  accessToken: string,
+  companyId: string
+): Promise<{ id: number; display_name: string }[]> {
+  // Try to get approvers from approval flow routes
+  try {
+    const res = await fetch(
+      `${FREEE_API_BASE}/approval_flow_routes?form_type=expense_application&company_id=${parseInt(companyId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      const specifyRoute = (data.approval_flow_routes || []).find(
+        (r: { name: string }) => r.name === "承認者を指定"
+      );
+
+      if (specifyRoute) {
+        const detailRes = await fetch(
+          `${FREEE_API_BASE}/approval_flow_routes/${specifyRoute.id}?company_id=${parseInt(companyId)}`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        if (detailRes.ok) {
+          const detail = await detailRes.json();
+          const approverMap = new Map<number, string>();
+          const route = detail.approval_flow_route;
+          for (const step of route?.steps || []) {
+            for (const approver of step.approvers || []) {
+              const id = approver.user_id || approver.id;
+              if (id && !approverMap.has(id)) {
+                approverMap.set(id, approver.name || approver.display_name || `User ${id}`);
+              }
+            }
+          }
+
+          if (approverMap.size > 0) {
+            return Array.from(approverMap, ([id, display_name]) => ({ id, display_name }));
+          }
+        }
+      }
+    }
+  } catch {
+    // Fall through to empty
+  }
+
+  return [];
 }

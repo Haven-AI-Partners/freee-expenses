@@ -216,12 +216,20 @@ export async function submitRun(runId: string): Promise<void> {
           item.file_name
         );
 
+        const issueMonth = parseInt(run.month.split("-")[1], 10);
+        const applicantName = prefs?.applicant_name || "";
+        const title = `${issueMonth}月立替精算_${applicantName}`;
+
         const expenseId = await createExpenseApplication(
           freeeToken,
           companyId,
-          `${run.month} - ${extractedData.partner_name}`,
-          prefs?.freee_member_id || null,
-          prefs?.payment_type || "employee_pay",
+          title,
+          {
+            applicantId: prefs?.freee_member_id || null,
+            sectionId: prefs?.department ? parseInt(prefs.department) : null,
+            approverId: prefs?.approver_id || null,
+            approvalFlowRouteId: 1161971,
+          },
           [{ receiptData: extractedData, receiptId }]
         );
 

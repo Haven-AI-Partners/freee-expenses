@@ -31,6 +31,8 @@ export interface UserPreferences {
   freee_member_id: number | null;
   payment_type: "employee_pay" | "company_pay";
   folder_pattern: string;
+  department: string | null;
+  approver_id: number | null;
 }
 
 export type RunStatus = "pending" | "running" | "extracted" | "submitting" | "completed" | "failed";

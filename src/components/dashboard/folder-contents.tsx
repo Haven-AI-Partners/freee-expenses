@@ -9,10 +9,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FolderOpen, Loader2, ScanEye, Send, RefreshCw, CheckCheck } from "lucide-react";
+import { FolderOpen, Loader2, ScanEye, Send, RefreshCw, CheckCheck, Trash2 } from "lucide-react";
 import type { DriveTreeNode } from "@/lib/google/drive";
 import { TreeNode } from "./tree-node";
-import { type FolderData, type FileState, formatYen, collectReceipts } from "./folder-types";
+import { type FolderData, type FileState, type FreeeOption, formatYen, collectReceipts } from "./folder-types";
 
 export function FolderContents({ month }: { month: string }) {
   const [data, setData] = useState<FolderData | null>(null);
@@ -20,6 +20,45 @@ export function FolderContents({ month }: { month: string }) {
   const [error, setError] = useState<string | null>(null);
   const [fileStates, setFileStates] = useState<Record<string, FileState>>({});
   const [finalizing, setFinalizing] = useState(false);
+  const [deletingFreee, setDeletingFreee] = useState(false);
+  const [sections, setSections] = useState<FreeeOption[]>([]);
+  const [members, setMembers] = useState<FreeeOption[]>([]);
+  const [defaultSectionId, setDefaultSectionId] = useState<string>("");
+  const [defaultApproverId, setDefaultApproverId] = useState<string>("");
+
+  useEffect(() => {
+    // Fetch Freee sections and members
+    fetch("/api/freee-options")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { sections?: FreeeOption[]; members?: FreeeOption[] } | null) => {
+        if (data?.sections) setSections(data.sections);
+        const fetched = data?.members || [];
+        if (!fetched.some((m) => m.id === 13907627)) {
+          fetched.push({ id: 13907627, display_name: "Kent Monma" });
+        }
+        setMembers(fetched);
+      })
+      .catch(() => {
+        setMembers([{ id: 13907627, display_name: "Kent Monma" }]);
+      });
+
+    // Fetch user preferences for defaults
+    fetch("/api/preferences")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { department?: string; approver_id?: number; applicant_name?: string } | null) => {
+        if (data?.department) setDefaultSectionId(data.department);
+        if (data?.approver_id) {
+          const id = data.approver_id.toString();
+          setDefaultApproverId(id);
+          // Ensure the approver is in the members list
+          setMembers((prev) => {
+            if (prev.some((m) => m.id.toString() === id)) return prev;
+            return [...prev, { id: data.approver_id!, display_name: id === "13907627" ? "Kent Monma" : `Approver ${id}` }];
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);
@@ -33,9 +72,12 @@ export function FolderContents({ month }: { month: string }) {
       if (json.ocrByFileId) {
         const restored: Record<string, FileState> = {};
         for (const [fileId, entry] of Object.entries(json.ocrByFileId)) {
+          const isSubmitted = !!(entry.freee_receipt_id && entry.freee_expense_id);
           restored[fileId] = {
             ocrData: entry.extracted_data,
-            submitted: !!(entry.freee_receipt_id && entry.freee_expense_id),
+            submitted: isSubmitted,
+            sectionId: defaultSectionId || undefined,
+            approverId: defaultApproverId || undefined,
           };
         }
         setFileStates((prev) => ({ ...restored, ...prev }));
@@ -50,6 +92,32 @@ export function FolderContents({ month }: { month: string }) {
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
+
+  // Apply default section/approver when preferences load or files finish loading
+  useEffect(() => {
+    if (!defaultSectionId && !defaultApproverId) return;
+    if (loading) return;
+    setFileStates((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        const s = next[key];
+        if (s.ocrData) {
+          const needsSection = defaultSectionId && !s.sectionId;
+          const needsApprover = defaultApproverId && !s.approverId;
+          if (needsSection || needsApprover) {
+            changed = true;
+            next[key] = {
+              ...s,
+              sectionId: s.sectionId || defaultSectionId || undefined,
+              approverId: s.approverId || defaultApproverId || undefined,
+            };
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [defaultSectionId, defaultApproverId, loading]);
 
   const updateFileState = useCallback(
     (fileId: string, update: Partial<FileState>) => {
@@ -75,7 +143,12 @@ export function FolderContents({ month }: { month: string }) {
           throw new Error(error || "OCR failed");
         }
         const { data } = await res.json();
-        updateFileState(fileId, { ocrLoading: false, ocrData: data });
+        updateFileState(fileId, {
+          ocrLoading: false,
+          ocrData: data,
+          sectionId: defaultSectionId || undefined,
+          approverId: defaultApproverId || undefined,
+        });
       } catch (err) {
         updateFileState(fileId, {
           ocrLoading: false,
@@ -83,7 +156,7 @@ export function FolderContents({ month }: { month: string }) {
         });
       }
     },
-    [updateFileState]
+    [updateFileState, defaultSectionId, defaultApproverId]
   );
 
   const handleSubmit = useCallback(
@@ -100,6 +173,8 @@ export function FolderContents({ month }: { month: string }) {
             fileId,
             fileName,
             extractedData: state.ocrData,
+            sectionId: state.sectionId || undefined,
+            approverId: state.approverId || undefined,
           }),
         });
         if (!res.ok) {
@@ -141,6 +216,16 @@ export function FolderContents({ month }: { month: string }) {
       }
     },
     [fileStates, handleSubmit]
+  );
+
+  const handleUpdateFileOption = useCallback(
+    (fileId: string, key: "sectionId" | "approverId", value: string) => {
+      setFileStates((prev) => ({
+        ...prev,
+        [fileId]: { ...prev[fileId], [key]: value },
+      }));
+    },
+    []
   );
 
   const handleUpdateAmount = useCallback(
@@ -208,6 +293,40 @@ export function FolderContents({ month }: { month: string }) {
     }
   }, []);
 
+  const handleDeleteAll = useCallback(async () => {
+    setDeletingFreee(true);
+    setError(null);
+    try {
+      // Delete from Freee if any are submitted
+      const anySubmitted = Object.values(fileStates).some((s) => s.submitted);
+      if (anySubmitted) {
+        const freeeRes = await fetch("/api/expense-item/delete-freee", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const freeeJson = await freeeRes.json();
+        if (freeeJson.errors?.length) {
+          setError(`Freee errors: ${freeeJson.errors.join(", ")}`);
+        }
+      }
+
+      // Clear all local OCR data
+      await fetch("/api/expense-item/ocr", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+
+      setFileStates({});
+    } catch (err) {
+      console.error("Delete all failed:", err);
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingFreee(false);
+    }
+  }, [fileStates]);
+
   const hasSubmitted = Object.values(fileStates).some((s) => s.submitted);
 
   return (
@@ -270,6 +389,24 @@ export function FolderContents({ month }: { month: string }) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Finalize all drafts in Freee</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  disabled={Object.keys(fileStates).length === 0 || deletingFreee}
+                  onClick={handleDeleteAll}
+                >
+                  {deletingFreee ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete all (Freee + local data)</TooltipContent>
             </Tooltip>
             <Button
               variant="ghost"
@@ -336,12 +473,15 @@ export function FolderContents({ month }: { month: string }) {
                           node={node}
                           fileIndex={isNodeReceipt ? idx : undefined}
                           fileStates={fileStates}
+                          sections={sections}
+                          members={members}
                           onOcr={handleOcr}
                           onSubmit={handleSubmit}
                           onDeleteOcr={handleDeleteOcr}
                           onOcrAll={handleOcrAll}
                           onSubmitAll={handleSubmitAll}
                           onUpdateAmount={handleUpdateAmount}
+                          onUpdateFileOption={handleUpdateFileOption}
                         />
                       );
                     });

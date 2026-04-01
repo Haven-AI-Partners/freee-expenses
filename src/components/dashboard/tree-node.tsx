@@ -28,21 +28,25 @@ import {
   X,
   Trash2,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DriveTreeNode } from "@/lib/google/drive";
 import { OcrTooltipContent } from "./ocr-tooltip";
-import { type FileState, formatYen, collectReceipts } from "./folder-types";
+import { type FileState, type FreeeOption, formatYen, collectReceipts } from "./folder-types";
 
 export interface TreeNodeProps {
   node: DriveTreeNode;
   depth?: number;
   fileIndex?: number;
   fileStates: Record<string, FileState>;
+  sections: FreeeOption[];
+  members: FreeeOption[];
   onOcr: (fileId: string, fileName: string, mimeType: string) => void;
   onSubmit: (fileId: string, fileName: string) => void;
   onDeleteOcr: (fileId: string) => void;
   onOcrAll: (files: DriveTreeNode[]) => void;
   onSubmitAll: (files: DriveTreeNode[]) => void;
   onUpdateAmount: (fileId: string, amount: number) => void;
+  onUpdateFileOption: (fileId: string, key: "sectionId" | "approverId", value: string) => void;
 }
 
 export function TreeNode({
@@ -50,12 +54,15 @@ export function TreeNode({
   depth = 0,
   fileIndex,
   fileStates,
+  sections,
+  members,
   onOcr,
   onSubmit,
   onDeleteOcr,
   onOcrAll,
   onSubmitAll,
   onUpdateAmount,
+  onUpdateFileOption,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(true);
   const isFolder = !!node.children;
@@ -197,6 +204,44 @@ export function TreeNode({
           </div>
         )}
 
+        {isReceipt && state.ocrData && sections.length > 0 && (
+          <Select
+            value={state.sectionId || ""}
+            onValueChange={(v) => onUpdateFileOption(node.id, "sectionId", v)}
+            disabled={state.submitted}
+          >
+            <SelectTrigger className="h-6 w-28 text-xs shrink-0">
+              <SelectValue placeholder="Dept" />
+            </SelectTrigger>
+            <SelectContent>
+              {sections.map((s) => (
+                <SelectItem key={s.id} value={s.id.toString()}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {isReceipt && state.ocrData && members.length > 0 && (
+          <Select
+            value={state.approverId || ""}
+            onValueChange={(v) => onUpdateFileOption(node.id, "approverId", v)}
+            disabled={state.submitted}
+          >
+            <SelectTrigger className="h-6 w-32 text-xs shrink-0">
+              <SelectValue placeholder="Approver" />
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id.toString()}>
+                  {m.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         {isReceipt && (
           <div className="flex items-center gap-1 shrink-0">
             <Dialog>
@@ -323,12 +368,15 @@ export function TreeNode({
                 depth={depth + 1}
                 fileIndex={isChildReceipt ? idx : undefined}
                 fileStates={fileStates}
+                sections={sections}
+                members={members}
                 onOcr={onOcr}
                 onSubmit={onSubmit}
                 onDeleteOcr={onDeleteOcr}
                 onOcrAll={onOcrAll}
                 onSubmitAll={onSubmitAll}
                 onUpdateAmount={onUpdateAmount}
+                onUpdateFileOption={onUpdateFileOption}
               />
             );
           });

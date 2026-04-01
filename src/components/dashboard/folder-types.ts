@@ -21,7 +21,15 @@ export type FileState = {
   submitLoading?: boolean;
   submitted?: boolean;
   submitError?: string;
+  sectionId?: string;
+  approverId?: string;
 };
+
+export interface FreeeOption {
+  id: number;
+  name?: string;
+  display_name?: string;
+}
 
 export function formatYen(amount: number): string {
   return `¥${amount.toLocaleString()}`;
