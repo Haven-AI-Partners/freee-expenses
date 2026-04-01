@@ -227,9 +227,16 @@ export function TreeNode({
             ) : state.ocrError ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <X className="h-4 w-4 text-destructive" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive"
+                    onClick={() => onOcr(node.id, node.name, node.mimeType)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent>{state.ocrError}</TooltipContent>
+                <TooltipContent>{state.ocrError} — click to retry</TooltipContent>
               </Tooltip>
             ) : state.ocrData ? (
               <Tooltip>
@@ -268,9 +275,16 @@ export function TreeNode({
             ) : state.submitError ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <X className="h-4 w-4 text-destructive" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive"
+                    onClick={() => onSubmit(node.id, node.name)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent>{state.submitError}</TooltipContent>
+                <TooltipContent>{state.submitError} — click to retry</TooltipContent>
               </Tooltip>
             ) : (
               <Tooltip>

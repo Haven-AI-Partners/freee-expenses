@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FolderOpen, Loader2, ScanEye, Send, RefreshCw } from "lucide-react";
+import { FolderOpen, Loader2, ScanEye, Send, RefreshCw, CheckCheck } from "lucide-react";
 import type { DriveTreeNode } from "@/lib/google/drive";
 import { TreeNode } from "./tree-node";
 import { type FolderData, type FileState, formatYen, collectReceipts } from "./folder-types";
@@ -19,6 +19,7 @@ export function FolderContents({ month }: { month: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fileStates, setFileStates] = useState<Record<string, FileState>>({});
+  const [finalizing, setFinalizing] = useState(false);
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);
@@ -183,6 +184,32 @@ export function FolderContents({ month }: { month: string }) {
     []
   );
 
+  const handleFinalizeAll = useCallback(async () => {
+    setFinalizing(true);
+    try {
+      const res = await fetch("/api/expense-item/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Finalize failed");
+      }
+      console.log(`Finalized ${json.finalized} expenses`, json.errors?.length ? json.errors : "");
+      if (json.finalized === 0 && json.errors?.length) {
+        setError(`Finalize errors: ${json.errors.join(", ")}`);
+      }
+    } catch (err) {
+      console.error("Finalize failed:", err);
+      setError(err instanceof Error ? err.message : "Finalize failed");
+    } finally {
+      setFinalizing(false);
+    }
+  }, []);
+
+  const hasSubmitted = Object.values(fileStates).some((s) => s.submitted);
+
   return (
     <TooltipProvider delayDuration={200}>
       <Card>
@@ -224,7 +251,25 @@ export function FolderContents({ month }: { month: string }) {
                   <Send className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Send all to Freee</TooltipContent>
+              <TooltipContent>Send all to Freee (as drafts)</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!hasSubmitted || finalizing}
+                  onClick={handleFinalizeAll}
+                >
+                  {finalizing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCheck className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Finalize all drafts in Freee</TooltipContent>
             </Tooltip>
             <Button
               variant="ghost"

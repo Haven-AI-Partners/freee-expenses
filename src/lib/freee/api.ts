@@ -44,23 +44,28 @@ export async function createExpenseApplication(
     receiptId: number;
   }[]
 ): Promise<number> {
-  const expenseLines = items.map((item) => ({
-    transaction_date: item.receiptData.issue_date,
-    amount: item.receiptData.amount,
-    description: `${item.receiptData.partner_name} - ${item.receiptData.description}`,
+  const purchaseLines = items.map((item) => ({
     receipt_id: item.receiptId,
+    transaction_date: item.receiptData.issue_date,
+    expense_application_lines: [
+      {
+        description: `${item.receiptData.partner_name} - ${item.receiptData.description}`,
+        amount: item.receiptData.amount,
+      },
+    ],
   }));
 
-  const body: Record<string, unknown> = {
+  const expenseApplication: Record<string, unknown> = {
     company_id: parseInt(companyId),
     title,
     issue_date: new Date().toISOString().split("T")[0],
-    expense_application_lines: expenseLines,
+    purchase_lines: purchaseLines,
+    draft: true,
   };
 
   // Set the applicant (Freee member) who is submitting this expense
   if (applicantId) {
-    body.applicant_id = applicantId;
+    expenseApplication.applicant_id = applicantId;
   }
 
   const res = await fetch(`${FREEE_API_BASE}/expense_applications`, {
@@ -69,7 +74,7 @@ export async function createExpenseApplication(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(expenseApplication),
   });
 
   if (!res.ok) {
@@ -79,6 +84,74 @@ export async function createExpenseApplication(
 
   const data = await res.json();
   return data.expense_application.id;
+}
+
+/**
+ * Update an expense application to remove draft status (finalize it).
+ */
+/**
+ * Update an expense application to remove draft status (finalize it).
+ * First fetches the current application to get required fields like title.
+ */
+export async function finalizeExpenseApplication(
+  accessToken: string,
+  companyId: string,
+  expenseApplicationId: number
+): Promise<void> {
+  // Fetch the current application to get the title
+  const getRes = await fetch(
+    `${FREEE_API_BASE}/expense_applications/${expenseApplicationId}?company_id=${parseInt(companyId)}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!getRes.ok) {
+    const error = await getRes.text();
+    throw new Error(`Freee fetch expense failed: ${error}`);
+  }
+
+  const { expense_application: app } = await getRes.json();
+
+  // Echo back purchase_lines from the existing application
+  const purchaseLines = (app.purchase_lines || []).map(
+    (pl: { id: number; transaction_date: string; receipt_id: number; expense_application_lines: { id: number; description: string; amount: number }[] }) => ({
+      id: pl.id,
+      transaction_date: pl.transaction_date,
+      receipt_id: pl.receipt_id,
+      expense_application_lines: pl.expense_application_lines.map((line) => ({
+        id: line.id,
+        description: line.description,
+        amount: line.amount,
+      })),
+    })
+  );
+
+  const body: Record<string, unknown> = {
+    company_id: parseInt(companyId),
+    title: app.title,
+    issue_date: app.issue_date,
+    purchase_lines: purchaseLines,
+    approval_flow_route_id: app.approval_flow_route_id,
+    draft: false,
+  };
+
+  const res = await fetch(
+    `${FREEE_API_BASE}/expense_applications/${expenseApplicationId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Freee finalize failed: ${error}`);
+  }
 }
 
 export async function getCompanies(

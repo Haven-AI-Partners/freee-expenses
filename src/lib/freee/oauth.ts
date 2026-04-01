@@ -42,6 +42,7 @@ export async function getFreeeAuthUrl(): Promise<string> {
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/freee/callback`,
     response_type: "code",
     prompt: "consent",
+    scope: "read write",
   });
   return `${FREEE_AUTH_URL}?${params.toString()}`;
 }

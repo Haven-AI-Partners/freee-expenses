@@ -21,7 +21,11 @@
       "WebSearch",
       "WebFetch",
       "Read",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:developer.freee.co.jp)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl -s https://api.github.com/repos/freee/freee-api-schema/contents/)",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(d[''''name'''']\\) for d in data]\")"
     ]
   }
 }
