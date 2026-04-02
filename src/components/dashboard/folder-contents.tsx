@@ -211,11 +211,68 @@ export function FolderContents({ month }: { month: string }) {
         const s = fileStates[f.id];
         return s?.ocrData && !s?.submitted && !s?.submitLoading;
       });
+      if (ready.length === 0) return;
+
+      // Mark all as loading
       for (const file of ready) {
-        await handleSubmit(file.id, file.name);
+        updateFileState(file.id, { submitLoading: true, submitError: undefined });
+      }
+
+      try {
+        const batchFiles = ready.map((file) => {
+          const s = fileStates[file.id]!;
+          return {
+            fileId: file.id,
+            fileName: file.name,
+            extractedData: s.ocrData!,
+            sectionId: s.sectionId || undefined,
+            approverId: s.approverId || undefined,
+          };
+        });
+
+        const res = await fetch("/api/expense-item/submit-batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ files: batchFiles }),
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          throw new Error(json.error || "Batch submit failed");
+        }
+
+        // Mark successful files as submitted
+        for (const result of json.results || []) {
+          for (const fileId of result.fileIds) {
+            updateFileState(fileId, { submitLoading: false, submitted: true });
+          }
+        }
+
+        // Show errors if any
+        if (json.errors?.length) {
+          setError(`Submit errors: ${json.errors.join(", ")}`);
+          // Mark remaining loading files as failed
+          for (const file of ready) {
+            setFileStates((prev) => {
+              const s = prev[file.id];
+              if (s?.submitLoading) {
+                return { ...prev, [file.id]: { ...s, submitLoading: false, submitError: "Batch failed" } };
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        for (const file of ready) {
+          updateFileState(file.id, {
+            submitLoading: false,
+            submitError: err instanceof Error ? err.message : "Submit failed",
+          });
+        }
       }
     },
-    [fileStates, handleSubmit]
+    [fileStates, updateFileState]
   );
 
   const handleUpdateFileOption = useCallback(
