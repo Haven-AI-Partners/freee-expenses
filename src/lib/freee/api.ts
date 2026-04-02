@@ -143,6 +143,7 @@ export async function finalizeExpenseApplication(
     company_id: parseInt(companyId),
     title: app.title,
     issue_date: app.issue_date,
+    section_id: app.section_id,
     purchase_lines: purchaseLines,
     approval_flow_route_id: app.approval_flow_route_id,
     approver_id: app.approver_id || 13907627, // fallback: Kent Monma
