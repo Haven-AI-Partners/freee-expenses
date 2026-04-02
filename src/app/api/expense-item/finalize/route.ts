@@ -33,20 +33,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ finalized: 0 });
     }
 
+    // Deduplicate by expense ID (grouped expenses share the same ID)
+    const uniqueExpenseIds = [...new Set(results.map((r) => r.freee_expense_id!))];
+
     let finalized = 0;
     const errors: string[] = [];
 
-    for (const result of results) {
+    for (const expenseId of uniqueExpenseIds) {
       try {
         await finalizeExpenseApplication(
           freeeToken,
           companyId,
-          result.freee_expense_id!
+          expenseId
         );
         finalized++;
       } catch (err) {
         errors.push(
-          `${result.file_id}: ${err instanceof Error ? err.message : "Unknown error"}`
+          `Expense ${expenseId}: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       }
     }

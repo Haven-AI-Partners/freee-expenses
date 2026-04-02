@@ -32,41 +32,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ deleted: 0 });
     }
 
+    // Deduplicate by expense ID (grouped expenses share the same ID)
+    const uniqueExpenseIds = [...new Set(results.map((r) => r.freee_expense_id!))];
+
     let deleted = 0;
     const errors: string[] = [];
 
-    for (const result of results) {
+    for (const expenseId of uniqueExpenseIds) {
       try {
         // Fetch current status to decide whether to cancel first
         const getRes = await fetch(
-          `https://api.freee.co.jp/api/1/expense_applications/${result.freee_expense_id}?company_id=${companyId}`,
+          `https://api.freee.co.jp/api/1/expense_applications/${expenseId}?company_id=${companyId}`,
           { headers: { Authorization: `Bearer ${freeeToken}` } }
         );
 
         if (getRes.ok) {
           const { expense_application: app } = await getRes.json();
 
-          // Only cancel if not already draft/canceled
           if (app.status !== "draft") {
             try {
-              await cancelExpenseApplication(
-                freeeToken,
-                companyId,
-                result.freee_expense_id!
-              );
+              await cancelExpenseApplication(freeeToken, companyId, expenseId);
             } catch {
               // If cancel fails, still try to delete
             }
           }
         }
 
-        await deleteExpenseApplication(
-          freeeToken,
-          companyId,
-          result.freee_expense_id!
-        );
+        await deleteExpenseApplication(freeeToken, companyId, expenseId);
 
-        // Clear Freee IDs from ocr_results
+        // Clear Freee IDs for all files that shared this expense
         await supabaseAdmin
           .from("ocr_results")
           .update({
@@ -75,12 +69,12 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", userId)
-          .eq("file_id", result.file_id);
+          .eq("freee_expense_id", expenseId);
 
         deleted++;
       } catch (err) {
         errors.push(
-          `${result.file_id}: ${err instanceof Error ? err.message : "Unknown error"}`
+          `Expense ${expenseId}: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       }
     }

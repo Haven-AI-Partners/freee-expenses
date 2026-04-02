@@ -9,14 +9,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FolderOpen, Loader2, ScanEye, Send, RefreshCw, CheckCheck, Trash2 } from "lucide-react";
+import { FolderOpen, Loader2, ScanEye, Send, RefreshCw, CheckCheck, Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import type { DriveTreeNode } from "@/lib/google/drive";
 import { TreeNode } from "./tree-node";
 import { type FolderData, type FileState, type FreeeOption, formatYen, collectReceipts } from "./folder-types";
 
-export function FolderContents({ month }: { month: string }) {
+export function FolderContents({ month, defaultCollapsed = false }: { month: string; defaultCollapsed?: boolean }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [data, setData] = useState<FolderData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!defaultCollapsed);
   const [error, setError] = useState<string | null>(null);
   const [fileStates, setFileStates] = useState<Record<string, FileState>>({});
   const [finalizing, setFinalizing] = useState(false);
@@ -87,11 +88,17 @@ export function FolderContents({ month }: { month: string }) {
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Always fetch on mount to check if folder exists
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
+    if (!hasFetched) {
+      setHasFetched(true);
+      fetchFiles();
+    }
+  }, [hasFetched, fetchFiles]);
 
   // Apply default section/approver when preferences load or files finish loading
   useEffect(() => {
@@ -386,15 +393,26 @@ export function FolderContents({ month }: { month: string }) {
 
   const hasSubmitted = Object.values(fileStates).some((s) => s.submitted);
 
+  // Hide if folder doesn't exist
+  if (data && !data.found) return null;
+
   return (
     <TooltipProvider delayDuration={200}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <button
+            className="flex items-center gap-2 text-lg font-semibold hover:text-accent-foreground transition-colors"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
             <FolderOpen className="h-5 w-5" />
-            Drive Folder
-          </CardTitle>
-          <div className="flex items-center gap-1">
+            {month}
+          </button>
+          {!collapsed && <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -474,9 +492,9 @@ export function FolderContents({ month }: { month: string }) {
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
-          </div>
+          </div>}
         </CardHeader>
-        <CardContent>
+        {!collapsed && <CardContent>
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -504,7 +522,7 @@ export function FolderContents({ month }: { month: string }) {
                     );
                     return (
                       <span className="ml-2">
-                        · {ocrd}/{total} OCR'd
+                        · {ocrd}/{total} OCR&apos;d
                         {submitted > 0 && ` · ${submitted} sent`}
                         {amount > 0 && ` · ${formatYen(amount)}`}
                       </span>
@@ -547,7 +565,7 @@ export function FolderContents({ month }: { month: string }) {
               )}
             </>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
     </TooltipProvider>
   );

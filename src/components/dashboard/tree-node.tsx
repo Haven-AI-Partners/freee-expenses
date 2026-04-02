@@ -108,7 +108,7 @@ export function TreeNode({
               <span className="truncate">{node.name}</span>
               {folderTotal > 0 && (
                 <span className="text-xs text-muted-foreground shrink-0 ml-1">
-                  {folderOcrd}/{folderTotal} OCR'd
+                  {folderOcrd}/{folderTotal} OCR&apos;d
                   {folderSubmitted > 0 && ` · ${folderSubmitted} sent`}
                   {folderAmount > 0 && ` · ${formatYen(folderAmount)}`}
                 </span>
