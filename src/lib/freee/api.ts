@@ -145,6 +145,7 @@ export async function finalizeExpenseApplication(
     issue_date: app.issue_date,
     purchase_lines: purchaseLines,
     approval_flow_route_id: app.approval_flow_route_id,
+    approver_id: app.approver_id || 13907627, // fallback: Kent Monma
     draft: false,
   };
 
