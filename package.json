@@ -11,7 +11,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.81.0",
+    "@anthropic-ai/sdk": "^0.85.0",
     "@clerk/nextjs": "^7.0.11",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-label": "^2.1.0",
