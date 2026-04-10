@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
             await supabaseAdmin
               .from("expense_items")
               .update({
-                status: "submitted",
+                status: "draft",
                 extracted_data: item.receiptData,
                 freee_receipt_id: item.receiptId,
                 freee_expense_id: expenseId,
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
               run_id: runId,
               file_id: item.fileId,
               file_name: item.fileName,
-              status: "submitted",
+              status: "draft",
               extracted_data: item.receiptData,
               freee_receipt_id: item.receiptId,
               freee_expense_id: expenseId,
@@ -180,13 +180,13 @@ export async function POST(request: NextRequest) {
           .from("expense_items")
           .select("*", { count: "exact", head: true })
           .eq("run_id", runId)
-          .eq("status", "submitted");
+          .eq("status", "draft");
 
         const { data: allItems } = await supabaseAdmin
           .from("expense_items")
           .select("extracted_data")
           .eq("run_id", runId)
-          .eq("status", "submitted");
+          .eq("status", "draft");
 
         const totalAmount = (allItems || []).reduce(
           (sum, i) => sum + ((i.extracted_data as { amount?: number })?.amount || 0),

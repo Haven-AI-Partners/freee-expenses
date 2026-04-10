@@ -48,16 +48,23 @@ export async function createExpenseApplication(
     receiptId: number;
   }[]
 ): Promise<number> {
-  const purchaseLines = items.map((item) => ({
-    receipt_id: item.receiptId,
-    transaction_date: item.receiptData.issue_date,
-    expense_application_lines: [
-      {
-        description: `${item.receiptData.partner_name} - ${item.receiptData.description}`,
-        amount: item.receiptData.amount,
-      },
-    ],
-  }));
+  const purchaseLines = items.map((item) => {
+    const { receiptData } = item;
+    let description = `${receiptData.partner_name} - ${receiptData.description}`;
+    if (receiptData.currency && receiptData.currency !== "JPY") {
+      description += ` (${receiptData.currency} ${receiptData.original_amount} @ ${receiptData.fx_rate?.toFixed(4)} on ${receiptData.fx_date})`;
+    }
+    return {
+      receipt_id: item.receiptId,
+      transaction_date: receiptData.issue_date,
+      expense_application_lines: [
+        {
+          description,
+          amount: receiptData.amount,
+        },
+      ],
+    };
+  });
 
   const expenseApplication: Record<string, unknown> = {
     company_id: parseInt(companyId),

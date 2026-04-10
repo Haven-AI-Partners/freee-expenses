@@ -25,8 +25,10 @@ import {
   ScanEye,
   Send,
   Check,
+  CheckCheck,
   X,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DriveTreeNode } from "@/lib/google/drive";
@@ -37,6 +39,7 @@ export interface TreeNodeProps {
   node: DriveTreeNode;
   depth?: number;
   fileIndex?: number;
+  month: string;
   fileStates: Record<string, FileState>;
   sections: FreeeOption[];
   members: FreeeOption[];
@@ -46,6 +49,7 @@ export interface TreeNodeProps {
   onOcrAll: (files: DriveTreeNode[]) => void;
   onSubmitAll: (files: DriveTreeNode[]) => void;
   onUpdateAmount: (fileId: string, amount: number) => void;
+  onUpdateDate: (fileId: string, date: string) => void;
   onUpdateFileOption: (fileId: string, key: "sectionId" | "approverId", value: string) => void;
 }
 
@@ -53,6 +57,7 @@ export function TreeNode({
   node,
   depth = 0,
   fileIndex,
+  month,
   fileStates,
   sections,
   members,
@@ -62,6 +67,7 @@ export function TreeNode({
   onOcrAll,
   onSubmitAll,
   onUpdateAmount,
+  onUpdateDate,
   onUpdateFileOption,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(true);
@@ -118,6 +124,40 @@ export function TreeNode({
             <>
               <span className="w-7 shrink-0 text-right text-xs text-muted-foreground tabular-nums mr-2">
                 {fileIndex != null ? `${fileIndex}.` : ""}
+              </span>
+              <span className="w-28 shrink-0 flex items-center gap-1 text-xs tabular-nums">
+                {state.ocrData ? (
+                  <>
+                    <input
+                      type="date"
+                      min={`${new Date().getFullYear() - 10}-01-01`}
+                      max={`${new Date().getFullYear()}-12-31`}
+                      className={`w-full bg-transparent border-b border-dashed hover:border-foreground focus:border-foreground focus:outline-none px-0 py-0 text-xs tabular-nums ${
+                        state.ocrData.issue_date.slice(0, 7) !== month
+                          ? "border-destructive text-destructive"
+                          : "border-muted-foreground/40"
+                      }`}
+                      defaultValue={state.ocrData.issue_date}
+                      key={state.ocrData.issue_date}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        if (e.target.value && e.target.value !== state.ocrData!.issue_date) {
+                          onUpdateDate(node.id, e.target.value);
+                        }
+                      }}
+                    />
+                    {state.ocrData.issue_date.slice(0, 7) !== month && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>Date doesn&apos;t match folder month ({month})</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </>
+                ) : (
+                  <span className="w-full text-muted-foreground">—</span>
+                )}
               </span>
               <span className="w-24 shrink-0 flex items-center text-xs tabular-nums">
                 <span className="text-muted-foreground shrink-0">¥</span>
@@ -315,8 +355,20 @@ export function TreeNode({
 
             {state.submitLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : state.submitted && state.finalized ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CheckCheck className="h-4 w-4 text-green-600" />
+                </TooltipTrigger>
+                <TooltipContent>Submitted for approval in Freee</TooltipContent>
+              </Tooltip>
             ) : state.submitted ? (
-              <Check className="h-4 w-4 text-green-600" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Check className="h-4 w-4 text-green-600" />
+                </TooltipTrigger>
+                <TooltipContent>Draft in Freee</TooltipContent>
+              </Tooltip>
             ) : state.submitError ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -367,6 +419,7 @@ export function TreeNode({
                 node={child}
                 depth={depth + 1}
                 fileIndex={isChildReceipt ? idx : undefined}
+                month={month}
                 fileStates={fileStates}
                 sections={sections}
                 members={members}
@@ -376,6 +429,7 @@ export function TreeNode({
                 onOcrAll={onOcrAll}
                 onSubmitAll={onSubmitAll}
                 onUpdateAmount={onUpdateAmount}
+                onUpdateDate={onUpdateDate}
                 onUpdateFileOption={onUpdateFileOption}
               />
             );

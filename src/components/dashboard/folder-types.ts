@@ -5,6 +5,7 @@ export interface OcrResultEntry {
   extracted_data: ExtractedReceiptData;
   freee_receipt_id: number | null;
   freee_expense_id: number | null;
+  finalized: boolean;
 }
 
 export interface FolderData {
@@ -20,6 +21,7 @@ export type FileState = {
   ocrError?: string;
   submitLoading?: boolean;
   submitted?: boolean;
+  finalized?: boolean;
   submitError?: string;
   sectionId?: string;
   approverId?: string;

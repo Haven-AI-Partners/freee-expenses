@@ -37,19 +37,35 @@ export async function GET(request: NextRequest) {
     // Fetch existing OCR results for this user
     const { data: ocrResults } = await supabaseAdmin
       .from("ocr_results")
-      .select("file_id, extracted_data, freee_receipt_id, freee_expense_id")
+      .select("file_id, extracted_data, overrides, freee_receipt_id, freee_expense_id")
       .eq("user_id", userId);
+
+    // Fetch finalized status from expense_items
+    const { data: finalizedItems } = await supabaseAdmin
+      .from("expense_items")
+      .select("file_id, expense_runs!inner(user_id)")
+      .eq("expense_runs.user_id", userId)
+      .eq("status", "finalized");
+
+    const finalizedSet = new Set((finalizedItems || []).map((i) => i.file_id));
 
     const ocrByFileId: Record<string, {
       extracted_data: unknown;
       freee_receipt_id: number | null;
       freee_expense_id: number | null;
+      finalized: boolean;
     }> = {};
     for (const r of ocrResults || []) {
+      // Merge overrides on top of extracted_data
+      const merged = {
+        ...(r.extracted_data as Record<string, unknown>),
+        ...(r.overrides as Record<string, unknown> || {}),
+      };
       ocrByFileId[r.file_id] = {
-        extracted_data: r.extracted_data,
+        extracted_data: merged,
         freee_receipt_id: r.freee_receipt_id,
         freee_expense_id: r.freee_expense_id,
+        finalized: finalizedSet.has(r.file_id),
       };
     }
 

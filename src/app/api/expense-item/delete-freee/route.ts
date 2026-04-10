@@ -71,6 +71,16 @@ export async function POST(request: NextRequest) {
           .eq("user_id", userId)
           .eq("freee_expense_id", expenseId);
 
+        // Reset expense_items status
+        await supabaseAdmin
+          .from("expense_items")
+          .update({
+            status: "extracted",
+            freee_receipt_id: null,
+            freee_expense_id: null,
+          })
+          .eq("freee_expense_id", expenseId);
+
         deleted++;
       } catch (err) {
         errors.push(

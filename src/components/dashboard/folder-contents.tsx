@@ -77,6 +77,7 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
           restored[fileId] = {
             ocrData: entry.extracted_data,
             submitted: isSubmitted,
+            finalized: entry.finalized,
             sectionId: defaultSectionId || undefined,
             approverId: defaultApproverId || undefined,
           };
@@ -292,6 +293,21 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
     []
   );
 
+  const persistOverride = useCallback(
+    async (fileId: string, overrides: Record<string, unknown>) => {
+      try {
+        await fetch("/api/expense-item/override", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId, overrides }),
+        });
+      } catch (err) {
+        console.error("Failed to persist override:", err);
+      }
+    },
+    []
+  );
+
   const handleUpdateAmount = useCallback(
     (fileId: string, amount: number) => {
       setFileStates((prev) => {
@@ -305,8 +321,27 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
           },
         };
       });
+      persistOverride(fileId, { amount });
     },
-    []
+    [persistOverride]
+  );
+
+  const handleUpdateDate = useCallback(
+    (fileId: string, date: string) => {
+      setFileStates((prev) => {
+        const existing = prev[fileId];
+        if (!existing?.ocrData) return prev;
+        return {
+          ...prev,
+          [fileId]: {
+            ...existing,
+            ocrData: { ...existing.ocrData, issue_date: date },
+          },
+        };
+      });
+      persistOverride(fileId, { issue_date: date });
+    },
+    [persistOverride]
   );
 
   const handleDeleteOcr = useCallback(
@@ -345,9 +380,19 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
       if (!res.ok) {
         throw new Error(json.error || "Finalize failed");
       }
-      console.log(`Finalized ${json.finalized} expenses`, json.errors?.length ? json.errors : "");
       if (json.finalized === 0 && json.errors?.length) {
         setError(`Finalize errors: ${json.errors.join(", ")}`);
+      } else {
+        // Mark all submitted files as finalized in local state
+        setFileStates((prev) => {
+          const next = { ...prev };
+          for (const key of Object.keys(next)) {
+            if (next[key].submitted) {
+              next[key] = { ...next[key], finalized: true };
+            }
+          }
+          return next;
+        });
       }
     } catch (err) {
       console.error("Finalize failed:", err);
@@ -547,6 +592,7 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
                           key={node.id}
                           node={node}
                           fileIndex={isNodeReceipt ? idx : undefined}
+                          month={month}
                           fileStates={fileStates}
                           sections={sections}
                           members={members}
@@ -556,6 +602,7 @@ export function FolderContents({ month, defaultCollapsed = false }: { month: str
                           onOcrAll={handleOcrAll}
                           onSubmitAll={handleSubmitAll}
                           onUpdateAmount={handleUpdateAmount}
+                          onUpdateDate={handleUpdateDate}
                           onUpdateFileOption={handleUpdateFileOption}
                         />
                       );

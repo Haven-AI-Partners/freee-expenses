@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
 import { Header } from "@/components/layout/header";
 import { RecentRuns } from "@/components/dashboard/recent-runs";
-import { RunTrigger } from "@/components/dashboard/run-trigger";
 import { FolderContents } from "@/components/dashboard/folder-contents";
 import { formatMonth } from "@/lib/utils";
 
@@ -51,16 +50,11 @@ export default async function DashboardPage() {
       <Header />
       <main className="container mx-auto px-4 py-8">
         <h2 className="text-3xl font-bold mb-8">Dashboard</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-1">
-            <RunTrigger disabled={!googleConnected} />
-          </div>
-          <div className="md:col-span-2 space-y-6">
-            {googleConnected && months.map((m, i) => (
-              <FolderContents key={m} month={m} defaultCollapsed={i > 0} />
-            ))}
-            <RecentRuns runs={runs || []} />
-          </div>
+        <div className="space-y-6">
+          {googleConnected && months.map((m, i) => (
+            <FolderContents key={m} month={m} defaultCollapsed={i > 0} />
+          ))}
+          <RecentRuns runs={runs || []} />
         </div>
       </main>
     </div>

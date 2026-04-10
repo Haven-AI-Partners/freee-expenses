@@ -50,7 +50,7 @@ export interface ExpenseRun {
   completed_at: string | null;
 }
 
-export type ItemStatus = "pending" | "extracted" | "submitted" | "failed";
+export type ItemStatus = "pending" | "extracted" | "draft" | "finalized" | "failed";
 
 export interface ExpenseItem {
   id: string;
@@ -67,10 +67,16 @@ export interface ExpenseItem {
 export interface ExtractedReceiptData {
   issue_date: string;
   partner_name: string;
-  amount: number;
-  tax_amount: number;
+  amount: number;           // Converted to JPY
+  tax_amount: number;       // Converted to JPY
   description: string;
   account_item_name: string;
+  // FX tracking (only set when original currency != JPY)
+  currency?: string;        // Original currency (ISO 4217)
+  original_amount?: number; // Amount in original currency
+  original_tax_amount?: number;
+  fx_rate?: number;         // Rate used for conversion (original → JPY)
+  fx_date?: string;         // Date of the FX rate used
 }
 
 export interface DriveFile {

@@ -52,7 +52,7 @@ export default async function RunDetailPage({
             <CardTitle>Expense Run Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <RunProgress run={run} />
+            <RunProgress run={run} items={items || []} />
 
             {run.status === "extracted" && (
               <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">

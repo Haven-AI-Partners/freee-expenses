@@ -6,7 +6,8 @@ import { ExpenseItem } from "@/types";
 const statusVariants: Record<string, "default" | "secondary" | "success" | "destructive" | "warning"> = {
   pending: "secondary",
   extracted: "warning",
-  submitted: "success",
+  draft: "warning",
+  finalized: "success",
   failed: "destructive",
 };
 

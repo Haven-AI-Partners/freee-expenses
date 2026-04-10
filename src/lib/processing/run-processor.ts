@@ -236,7 +236,7 @@ export async function submitRun(runId: string): Promise<void> {
         await supabaseAdmin
           .from("expense_items")
           .update({
-            status: "submitted",
+            status: "draft",
             freee_receipt_id: receiptId,
             freee_expense_id: expenseId,
           })

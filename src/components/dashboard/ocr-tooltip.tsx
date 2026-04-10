@@ -34,6 +34,14 @@ export function OcrTooltipContent({
           <span>{formatYen(data.tax_amount)}</span>
           <span className="text-muted-foreground">Category</span>
           <span>{data.account_item_name}</span>
+          {data.currency && data.currency !== "JPY" && (
+            <>
+              <span className="text-muted-foreground">Original</span>
+              <span>{data.currency} {data.original_amount?.toLocaleString()}</span>
+              <span className="text-muted-foreground">FX rate</span>
+              <span>1 {data.currency} = ¥{data.fx_rate?.toFixed(2)} ({data.fx_date})</span>
+            </>
+          )}
         </div>
         <div className="text-muted-foreground">{data.description}</div>
       </div>
