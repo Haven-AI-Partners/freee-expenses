@@ -12,14 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
       - uses: actions/setup-node@v6
         with:
           node-version: 20
-          cache: pnpm
+
+      - name: Install pnpm via corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.33.0 --activate
+          pnpm --version
 
       - run: pnpm install --frozen-lockfile
 
