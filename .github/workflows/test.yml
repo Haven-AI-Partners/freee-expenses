@@ -22,34 +22,57 @@ jobs:
           cache: pnpm
 
       - name: Install with diagnostics
+        id: install
         run: |
-          echo "::group::Environment"
-          echo "pnpm version: $(pnpm --version)"
-          echo "node version: $(node --version)"
-          echo "CI env: CI=$CI"
-          echo "::endgroup::"
-          echo "::group::pnpm config list"
-          pnpm config list || true
-          echo "::endgroup::"
-          echo "::group::pnpm-workspace.yaml"
-          cat pnpm-workspace.yaml || echo "(missing)"
-          echo "::endgroup::"
-          echo "::group::package.json pnpm field"
-          node -e "console.log(JSON.stringify(require('./package.json').pnpm || null, null, 2))"
-          echo "::endgroup::"
-          echo "::group::pnpm install"
+          {
+            echo "### pnpm install diagnostics"
+            echo ""
+            echo "- pnpm: \`$(pnpm --version)\`"
+            echo "- node: \`$(node --version)\`"
+            echo "- CI env: \`CI=$CI\`"
+            echo ""
+            echo "**pnpm config list**"
+            echo '```'
+            pnpm config list 2>&1 || true
+            echo '```'
+            echo ""
+            echo "**pnpm-workspace.yaml**"
+            echo '```yaml'
+            cat pnpm-workspace.yaml 2>&1 || echo "(missing)"
+            echo '```'
+            echo ""
+            echo "**package.json pnpm field**"
+            echo '```json'
+            node -e "console.log(JSON.stringify(require('./package.json').pnpm || null, null, 2))"
+            echo '```'
+          } > /tmp/diag.md
           set +e
           pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
           CODE=${PIPESTATUS[0]}
           set -e
-          echo "::endgroup::"
-          echo "Install exit code: $CODE"
-          if [ "$CODE" != "0" ]; then
-            echo "::error::pnpm install failed"
-            echo "=== LAST 80 LINES OF OUTPUT ==="
-            tail -80 /tmp/install.log
-            exit $CODE
-          fi
+          {
+            echo ""
+            echo "**pnpm install output (exit $CODE)**"
+            echo '```'
+            tail -100 /tmp/install.log
+            echo '```'
+          } >> /tmp/diag.md
+          cat /tmp/diag.md >> "$GITHUB_STEP_SUMMARY"
+          exit $CODE
+
+      - name: Post diagnostics on failure
+        if: failure() && steps.install.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/diag.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '<!-- pnpm-install-diag -->\n' + body,
+            });
 
       - run: pnpm typecheck
 
