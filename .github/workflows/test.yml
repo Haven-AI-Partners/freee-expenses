@@ -21,16 +21,35 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Environment diagnostics
+      - name: Install with diagnostics
         run: |
-          echo "=== pnpm version ==="; pnpm --version
-          echo "=== node version ==="; node --version
-          echo "=== pnpm config list ==="; pnpm config list || true
-          echo "=== pnpm-workspace.yaml ==="; cat pnpm-workspace.yaml || echo "(missing)"
-          echo "=== package.json pnpm field ==="; node -e "console.log(JSON.stringify(require('./package.json').pnpm || null, null, 2))"
-          echo "=== package.json packageManager ==="; node -e "console.log(require('./package.json').packageManager || '(none)')"
-
-      - run: pnpm install --frozen-lockfile
+          echo "::group::Environment"
+          echo "pnpm version: $(pnpm --version)"
+          echo "node version: $(node --version)"
+          echo "CI env: CI=$CI"
+          echo "::endgroup::"
+          echo "::group::pnpm config list"
+          pnpm config list || true
+          echo "::endgroup::"
+          echo "::group::pnpm-workspace.yaml"
+          cat pnpm-workspace.yaml || echo "(missing)"
+          echo "::endgroup::"
+          echo "::group::package.json pnpm field"
+          node -e "console.log(JSON.stringify(require('./package.json').pnpm || null, null, 2))"
+          echo "::endgroup::"
+          echo "::group::pnpm install"
+          set +e
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "::endgroup::"
+          echo "Install exit code: $CODE"
+          if [ "$CODE" != "0" ]; then
+            echo "::error::pnpm install failed"
+            echo "=== LAST 80 LINES OF OUTPUT ==="
+            tail -80 /tmp/install.log
+            exit $CODE
+          fi
 
       - run: pnpm typecheck
 
