@@ -21,6 +21,15 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Environment diagnostics
+        run: |
+          echo "=== pnpm version ==="; pnpm --version
+          echo "=== node version ==="; node --version
+          echo "=== pnpm config list ==="; pnpm config list || true
+          echo "=== pnpm-workspace.yaml ==="; cat pnpm-workspace.yaml || echo "(missing)"
+          echo "=== package.json pnpm field ==="; node -e "console.log(JSON.stringify(require('./package.json').pnpm || null, null, 2))"
+          echo "=== package.json packageManager ==="; node -e "console.log(require('./package.json').packageManager || '(none)')"
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
