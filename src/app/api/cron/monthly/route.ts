@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getLastMonth } from "@/lib/utils";
 
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "No users with Google Drive connected" });
   }
 
+  const triggers: Promise<unknown>[] = [];
   let triggeredCount = 0;
 
   for (const { user_id: userId } of googleUsers) {
@@ -53,19 +56,22 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (run) {
-      // Trigger processing
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/runs/${run.id}/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-internal-secret": process.env.CRON_SECRET || "",
-        },
-      }).catch((err) =>
-        console.error(`Failed to trigger run for user ${userId}:`, err)
+      triggers.push(
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/runs/${run.id}/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.CRON_SECRET || "",
+          },
+        }).catch((err) =>
+          console.error(`Failed to trigger run for user ${userId}:`, err)
+        )
       );
       triggeredCount++;
     }
   }
+
+  await Promise.allSettled(triggers);
 
   return NextResponse.json({
     message: `Triggered ${triggeredCount} runs for ${month}`,

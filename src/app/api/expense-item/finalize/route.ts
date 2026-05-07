@@ -75,6 +75,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Roll up: any run whose items are all out of in-progress states is now complete.
+    const { data: affectedItems } = await supabaseAdmin
+      .from("expense_items")
+      .select("run_id")
+      .in("freee_expense_id", uniqueExpenseIds);
+
+    const affectedRunIds = [
+      ...new Set((affectedItems || []).map((i) => i.run_id)),
+    ];
+
+    for (const runId of affectedRunIds) {
+      const { count: openItems } = await supabaseAdmin
+        .from("expense_items")
+        .select("*", { count: "exact", head: true })
+        .eq("run_id", runId)
+        .in("status", ["pending", "extracted", "draft"]);
+
+      if (openItems === 0) {
+        await supabaseAdmin
+          .from("expense_runs")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", runId);
+      }
+    }
+
     return NextResponse.json({ finalized, errors });
   } catch (error) {
     console.error("Finalize failed:", error);
