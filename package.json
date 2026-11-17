@@ -40,7 +40,7 @@
     "autoprefixer": "^10.6.2",
     "eslint": "^9.8.0",
     "eslint-config-next": "16.4.6",
-    "postcss": "^8.5.28",
+    "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
