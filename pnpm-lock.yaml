@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^1.6.0
-        version: 1.7.0(zod@4.4.3)
+        version: 1.8.0(zod@4.4.3)
       '@clerk/nextjs':
         specifier: ^7.9.25
         version: 7.9.25(next@16.4.6(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -109,8 +109,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/sdk@1.7.0':
-    resolution: {integrity: sha512-Z+0c1iHQozlt4ymMHapPXEXfFnSbPEWGnSKbkavt+qeyaMQ3Sd6QNxfQj7vyhHYqiqYadC9shrXub8ISKf7xjQ==}
+  '@anthropic-ai/sdk@1.8.0':
+    resolution: {integrity: sha512-yDOArk2+Qpd/djEKmZjrv7JZ+pn5iBHARJ9PAdvfhGf4H5wNqTgY/2K0/yDKdQdm8G8hrNQchMlBAHpPK7yBfg==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -2908,7 +2908,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@1.7.0(zod@4.4.3)':
+  '@anthropic-ai/sdk@1.8.0(zod@4.4.3)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       json-schema-to-ts: 3.1.1
